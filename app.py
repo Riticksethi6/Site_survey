@@ -98,64 +98,60 @@ for app in selected_apps:
         st.json(PRODUCT_SPECS["XNA121"])
         st.json(PRODUCT_SPECS["XNA151"])
 
-# ── REFERENCE PDFs – Clean three-column download buttons ──────────────────────────
+# ── REFERENCE PDFs – Only 2 buttons: XPL 1.9 and XQE 1.10 ────────────────────────────────
 st.header("Reference – Layout Specifications (Euro Pallets)")
 
 st.markdown("""
-Official EP Equipment documents with minimum aisle width tables and diagrams.  
-Click to download the full PDF for detailed planning.
+Official EP Equipment documents containing minimum aisle width tables and diagrams.  
+Click below to download the full PDF for detailed planning.
 """)
 
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("XPL – 1.9 version (1.8 m)")
-    st.caption("Most common/recommended version")
+    st.subheader("XPL Layout and Aisle Planning Specification")
+    st.caption("Recommended version – Driving one-way 1.8 m, two-way 3.6 m, loading one side 3.0 m, etc.")
+    st.markdown("""
+    Note from document:  
+    More aisle space allows:  
+    • Higher driving speed  
+    • Larger safety detection fields  
+    • Faster pallet throughput  
+    • Easier commissioning and tuning
+    """)
     try:
         with open("1.9_XPL_Layout_Planning_Specification.pdf", "rb") as pdf_file:
             st.download_button(
-                label="Download XPL 1.9 PDF",
+                label="Download XPL Layout PDF (1.9 version)",
                 data=pdf_file,
                 file_name="1.9_XPL_Layout_Planning_Specification.pdf",
                 mime="application/pdf",
                 key="download_xpl_1.9"
             )
     except FileNotFoundError:
-        st.error("XPL 1.9 PDF missing – upload as '1.9_XPL_Layout_Planning_Specification.pdf'")
+        st.error("File '1.9_XPL_Layout_Planning_Specification.pdf' not found in repo root")
 
 with col2:
-    st.subheader("XPL – 1.5 m version")
-    st.caption("Alternative layout (less conservative)")
-    try:
-        # Assuming the 1.5 m table is inside 1.9 file; change name if you have separate file
-        with open("1.9_XPL_Layout_Planning_Specification.pdf", "rb") as pdf_file:
-            st.download_button(
-                label="Download XPL 1.5 m PDF",
-                data=pdf_file,
-                file_name="XPL_Layout_1.5m_version.pdf",
-                mime="application/pdf",
-                key="download_xpl_1.5"
-            )
-    except FileNotFoundError:
-        st.error("XPL 1.5 m version not found – upload if separate file")
-
-with col3:
-    st.subheader("XQE – Stacking AMR Layout")
-    st.caption("Straight passage & turning reference")
+    st.subheader("XQE Layout and Aisle Planning Specification")
+    st.caption("Straight passage one-way 2.5 m, two-way 4.1 m, turning radius reference 500 mm")
+    st.markdown("""
+    Note from document:  
+    Diagram shows minimum access aisle for standard warehouses with 500 mm turning radius.
+    """)
     try:
         with open("1.10_XQE_Layout_planning_Specification.pdf", "rb") as pdf_file:
             st.download_button(
-                label="Download XQE PDF",
+                label="Download XQE Layout PDF (1.10 version)",
                 data=pdf_file,
                 file_name="1.10_XQE_Layout_planning_Specification.pdf",
                 mime="application/pdf",
                 key="download_xqe_1.10"
             )
     except FileNotFoundError:
-        st.error("XQE PDF missing – upload as '1.10_XQE_Layout_planning_Specification.pdf'")
+        st.error("File '1.10_XQE_Layout_planning_Specification.pdf' not found in repo root")
 
 # ── GENERATE REPORT ───────────────────────────────────────────────────────
-if st.button("Generate Word Report & Recommendations", type="primary"):
+if st.button("Generate Word Report", type="primary"):
     required_fields = ["customer_name", "customer_email", "customer_mobile", "application"]
     missing = [f for f in required_fields if not all_data.get(f)]
     if missing:
