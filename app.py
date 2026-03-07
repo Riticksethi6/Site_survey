@@ -110,7 +110,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("XPL Layout and Aisle Planning Specification")
-    st.caption("Recommended version – Driving one-way 1.8 m, two-way 3.6 m, loading one side 3.0 m, etc.")
+    st.caption("Standard layout specification required for XPL")
    
     try:
         with open("1.9_XPL_Layout_Planning_Specification.pdf", "rb") as pdf_file:
@@ -126,7 +126,7 @@ with col1:
 
 with col2:
     st.subheader("XQE Layout and Aisle Planning Specification")
-    st.caption("Straight passage one-way 2.5 m, two-way 4.1 m, turning radius reference 500 mm")
+    st.caption("Standard layout specification required for XQE")
    
     try:
         with open("1.10_XQE_Layout_planning_Specification.pdf", "rb") as pdf_file:
