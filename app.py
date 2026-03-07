@@ -15,7 +15,7 @@ from PIL import Image
 
 # ── CONFIG ────────────────────────────────────────────────────────────────
 TEMPLATE_PATH = "template.docx"
-LOGO_PATH = r"C:\Users\RitickSethi\10380 - E-P Equipment Europe\X-Mover - XP15\99 System solutions\1 Pre Sales\Appendix-System Solutions\Site_survey\Picture2.png"
+LOGO_PATH = "Picture2.png" 
 XPL_PDF = r"C:\Users\RitickSethi\10380 - E-P Equipment Europe\X-Mover - XP15\99 System solutions\1 Pre Sales\Appendix-System Solutions\Site_survey\1.9_XPL_Layout_Planning_Specification.pdf"
 XQE_PDF = r"C:\Users\RitickSethi\10380 - E-P Equipment Europe\X-Mover - XP15\99 System solutions\1 Pre Sales\Appendix-System Solutions\Site_survey\1.10_XQE_Layout_planning_Specification.pdf"
 
