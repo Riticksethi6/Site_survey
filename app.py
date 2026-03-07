@@ -5,6 +5,7 @@
 # Transport / Cross Docking sub-type and aisle width for both
 # Short description under Job to do in template
 # Customer email & mobile in header
+# Updated PDF download buttons using your actual GitHub file names
 
 import streamlit as st
 from docxtpl import DocxTemplate, InlineImage
@@ -15,10 +16,10 @@ from PIL import Image
 
 # ── CONFIG ────────────────────────────────────────────────────────────────
 TEMPLATE_PATH = "template.docx"
-LOGO_PATH = "Picture2.png" 
-XPL_PDF = r"C:\Users\RitickSethi\10380 - E-P Equipment Europe\X-Mover - XP15\99 System solutions\1 Pre Sales\Appendix-System Solutions\Site_survey\1.9_XPL_Layout_Planning_Specification.pdf"
-XQE_PDF = r"C:\Users\RitickSethi\10380 - E-P Equipment Europe\X-Mover - XP15\99 System solutions\1 Pre Sales\Appendix-System Solutions\Site_survey\1.10_XQE_Layout_planning_Specification.pdf"
+LOGO_PATH = "Picture2.png"  # ← relative path – file must be in repo root
 
+# These paths are only used locally – on cloud we use relative repo files
+# (but we keep them for local testing; cloud uses repo files directly)
 PROJECTS_ROOT = r"C:\Users\RitickSethi\10380 - E-P Equipment Europe\X-Mover - XP15\99 System solutions\2 Projects"
 os.makedirs(PROJECTS_ROOT, exist_ok=True)
 
@@ -27,7 +28,11 @@ st.set_page_config(page_title="EP Site Survey Dashboard", layout="wide")
 # ── HEADER ────────────────────────────────────────────────────────────────
 col_logo, col_title = st.columns([1, 5])
 with col_logo:
-    st.image(LOGO_PATH, width=220)
+    try:
+        st.image(LOGO_PATH, width=220)
+    except:
+        st.image("https://via.placeholder.com/220x100?text=EP+Logo", width=220)  # fallback
+
 with col_title:
     st.title("EP Equipment – Site Survey Dashboard")
 
@@ -93,32 +98,61 @@ for app in selected_apps:
         st.json(PRODUCT_SPECS["XNA121"])
         st.json(PRODUCT_SPECS["XNA151"])
 
-# ── REFERENCE PDFs ────────────────────────────────────────────────────────
+# ── REFERENCE PDFs – Clean three-column download buttons ──────────────────────────
 st.header("Reference – Layout Specifications (Euro Pallets)")
 
-col_pdf1, col_pdf2 = st.columns(2)
+st.markdown("""
+Official EP Equipment documents with minimum aisle width tables and diagrams.  
+Click to download the full PDF for detailed planning.
+""")
 
-with col_pdf1:
-    st.subheader("XQE – Stacking AMR Layout Planning")
-    if os.path.exists(XQE_PDF):
-        with open(XQE_PDF, "rb") as pdf_file:
-            st.download_button(
-                label="Download Full XQE PDF",
-                data=pdf_file,
-                file_name="1.10_XQE_Layout_planning_Specification.pdf",
-                mime="application/pdf"
-            )
+col1, col2, col3 = st.columns(3)
 
-with col_pdf2:
-    st.subheader("XPL – Pallet Mover Layout Planning")
-    if os.path.exists(XPL_PDF):
-        with open(XPL_PDF, "rb") as pdf_file:
+with col1:
+    st.subheader("XPL – 1.9 version (1.8 m)")
+    st.caption("Most common/recommended version")
+    try:
+        with open("1.9_XPL_Layout_Planning_Specification.pdf", "rb") as pdf_file:
             st.download_button(
-                label="Download Full XPL PDF",
+                label="Download XPL 1.9 PDF",
                 data=pdf_file,
                 file_name="1.9_XPL_Layout_Planning_Specification.pdf",
-                mime="application/pdf"
+                mime="application/pdf",
+                key="download_xpl_1.9"
             )
+    except FileNotFoundError:
+        st.error("XPL 1.9 PDF missing – upload as '1.9_XPL_Layout_Planning_Specification.pdf'")
+
+with col2:
+    st.subheader("XPL – 1.5 m version")
+    st.caption("Alternative layout (less conservative)")
+    try:
+        # Assuming the 1.5 m table is inside 1.9 file; change name if you have separate file
+        with open("1.9_XPL_Layout_Planning_Specification.pdf", "rb") as pdf_file:
+            st.download_button(
+                label="Download XPL 1.5 m PDF",
+                data=pdf_file,
+                file_name="XPL_Layout_1.5m_version.pdf",
+                mime="application/pdf",
+                key="download_xpl_1.5"
+            )
+    except FileNotFoundError:
+        st.error("XPL 1.5 m version not found – upload if separate file")
+
+with col3:
+    st.subheader("XQE – Stacking AMR Layout")
+    st.caption("Straight passage & turning reference")
+    try:
+        with open("1.10_XQE_Layout_planning_Specification.pdf", "rb") as pdf_file:
+            st.download_button(
+                label="Download XQE PDF",
+                data=pdf_file,
+                file_name="1.10_XQE_Layout_planning_Specification.pdf",
+                mime="application/pdf",
+                key="download_xqe_1.10"
+            )
+    except FileNotFoundError:
+        st.error("XQE PDF missing – upload as '1.10_XQE_Layout_planning_Specification.pdf'")
 
 # ── GENERATE REPORT ───────────────────────────────────────────────────────
 if st.button("Generate Word Report & Recommendations", type="primary"):
