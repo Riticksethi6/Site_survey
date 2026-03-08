@@ -98,25 +98,29 @@ col_pdf1, col_pdf2 = st.columns(2)
 
 with col_pdf1:
     st.subheader("XQE – Stacking AMR Layout Planning")
-    if os.path.exists(XQE_PDF):
-        with open(XQE_PDF, "rb") as pdf_file:
+    try:
+        with open("1.10_XQE_Layout_planning_Specification.pdf", "rb") as pdf_file:
             st.download_button(
                 label="Download Full XQE PDF",
                 data=pdf_file,
                 file_name="1.10_XQE_Layout_planning_Specification.pdf",
                 mime="application/pdf"
             )
+    except FileNotFoundError:
+        st.error("XQE PDF not found in repo root. Upload '1.10_XQE_Layout_planning_Specification.pdf'")
 
-with col2:
+with col_pdf2:
     st.subheader("XPL – Pallet Mover Layout Planning")
-    if os.path.exists(XPL_PDF):
-        with open(XPL_PDF, "rb") as pdf_file:
+    try:
+        with open("1.9_XPL_Layout_Planning_Specification.pdf", "rb") as pdf_file:
             st.download_button(
                 label="Download Full XPL PDF",
                 data=pdf_file,
                 file_name="1.9_XPL_Layout_Planning_Specification.pdf",
                 mime="application/pdf"
             )
+    except FileNotFoundError:
+        st.error("XPL PDF not found in repo root. Upload '1.9_XPL_Layout_Planning_Specification.pdf'")
 
 # ── GENERATE REPORT ───────────────────────────────────────────────────────
 if st.button("Generate Word Report & Recommendations", type="primary"):
