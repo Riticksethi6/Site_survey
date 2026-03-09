@@ -21,7 +21,12 @@ def build_header_inputs():
     with col2:
         survey_date = st.date_input("Survey Date", datetime.today(), key="survey_date")
 
-    
+    # Application(s) after customer info
+    application = st.multiselect(
+        "Application(s) * (select all that apply)",
+        ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
+        key="application"
+    )
 
     # Short description right after application
     task_description = st.text_area("Job-To-Do", height=120, key="task_description")
@@ -43,12 +48,7 @@ def build_header_inputs():
     with col_p2:
         load_dimensions = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions")
 
-    # Application(s) after customer info
-    application = st.multiselect(
-        "Application(s) * (select all that apply)",
-        ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
-        key="application"
-    )
+    st.markdown("### Truck-Specific Requirements")
 
     # ── Transport / Cross Docking ───────────────────────────────────────────────
     xpl_sub_type = None
