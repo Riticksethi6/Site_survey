@@ -77,9 +77,17 @@ def build_header_inputs():
         for i in range(2, num_additional + 2):
             pallets.append(_build_pallet_block(i))
 
-    
+    application_type = st.selectbox(
+        "Application Type",
+        ["Standard", "Custom", "High Load", "Other"],
+        key="application_type"
+    )
 
-    
+    temperature_range = st.selectbox(
+        "Temperature Range (°C)",
+        ["Below 0", "1-10", "10-20", "20-30", "30-40"],
+        key="temperature_range"
+    )
 
     st.markdown("### Application(s) * (select all that apply)")
     application = st.multiselect(
@@ -96,7 +104,7 @@ def build_header_inputs():
 
     st.markdown("### Application-Specific Requirements")
 
-    # defaults
+    # Defaults
     load_weight_kg = 1200
     max_stacking_height_m = 3.0
 
@@ -118,7 +126,7 @@ def build_header_inputs():
     aisle_width_m = 1.8
     xna_model = None
 
-    # 1st question in application-specific
+    # Always first question when any application is selected
     if any(app_name in application for app_name in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
         load_weight_kg = st.number_input(
             "Load Weight [kg]",
@@ -134,6 +142,7 @@ def build_header_inputs():
                 "Please select 'Other' and specify the correct pallet type and dimensions."
             )
 
+    # Transport / Cross Docking
     if "Transport / Cross Docking" in application:
         xpl_sub_type = st.radio(
             "Select Application Type",
@@ -149,6 +158,7 @@ def build_header_inputs():
             key="cross_docking_aisle"
         )
 
+    # Stacking / Conveyor
     if "Stacking/Conveyor" in application:
         st.info("Stacking / Conveyor (XQE122): 1200 kg up to 4.5 m, 1500 kg up to 3.5 m")
 
@@ -163,6 +173,47 @@ def build_header_inputs():
                 "Specify Other Pickup Type",
                 key="pickup_type_other"
             )
+
+        if pickup_type == "Ground":
+            box_distance_mm = st.number_input(
+                "Distance Between 2 Pallets [mm]",
+                min_value=0,
+                value=200,
+                step=1,
+                key="ground_box_distance_mm"
+            )
+            if box_distance_mm < 200:
+                st.error("Minimum distance between pallets on ground is 200 mm. Less than this is not accepted.")
+
+        elif pickup_type == "Conveyor":
+            conveyor_height = st.number_input(
+                "Conveyor Height [mm]",
+                min_value=0,
+                value=0,
+                step=1,
+                key="conveyor_height"
+            )
+
+            conveyor_picture = st.file_uploader(
+                "Upload Conveyor Picture",
+                type=["jpg", "jpeg", "png", "pdf"],
+                key="conveyor_picture"
+            )
+
+            load_at_edge = st.radio(
+                "Does the pallet arrive at the edge of the conveyor?",
+                ["Yes", "No"],
+                key="load_at_edge"
+            )
+
+            if load_at_edge == "No":
+                distance_from_edge = st.number_input(
+                    "Distance Between Conveyor Edge and Pallet [mm]",
+                    min_value=0,
+                    value=0,
+                    step=1,
+                    key="distance_from_edge"
+                )
 
         stacking_type = st.radio(
             "Stacking Type",
@@ -183,81 +234,58 @@ def build_header_inputs():
                 key="storage_layout"
             )
 
-            box_distance_mm = st.number_input(
-                "Distance Between 2 Boxes Stacked Next to Each Other [mm]",
+            floor_distance = st.number_input(
+                "Distance Between 2 Pallets [mm]",
                 min_value=0,
                 value=200,
                 step=1,
-                key="box_distance_mm"
+                key="floor_box_distance_mm"
             )
+            box_distance_mm = floor_distance
 
-            if box_distance_mm < 200:
-                st.error("Minimum distance for floor stacking is 200 mm.")
+            if floor_distance < 200:
+                st.error("Minimum distance between 2 pallets for floor stacking is 200 mm. Less than this is not accepted.")
 
             aisle_width_mm = st.number_input(
-                "Aisle Width for Floor Stacking [mm]",
+                "Floor Storage Aisle Width [mm]",
                 min_value=0,
                 value=1640,
                 step=1,
-                key="aisle_width_mm"
+                key="floor_aisle_width_mm"
             )
 
             if aisle_width_mm < 1640:
-                st.error("Minimum aisle width for floor stacking is 1640 mm.")
+                st.error("Minimum aisle width for floor stacking is 1640 mm. Less than this is not accepted.")
+            else:
+                st.info("The more the available aisle space, the faster and smoother the process.")
 
         elif stacking_type == "Rack Stacking":
-            box_distance_mm = st.number_input(
-                "Distance Between Boxes on Racks [mm]",
+            rack_distance = st.number_input(
+                "Distance Between Pallets Stacked in Racks [mm]",
                 min_value=0,
                 value=75,
                 step=1,
-                key="box_distance_mm"
+                key="rack_box_distance_mm"
             )
+            box_distance_mm = rack_distance
 
-            if box_distance_mm < 75:
-                st.error("Minimum distance for rack stacking is 75 mm.")
+            if rack_distance < 75:
+                st.error("Minimum distance between pallets stacked in racks is 75 mm. Less than this is not accepted.")
 
             aisle_width_mm = st.number_input(
-                "Aisle Width for Rack Stacking [mm] (pallet to pallet)",
+                "Rack Stacking Aisle Width (Pallet to Pallet) [mm]",
                 min_value=0,
-                value=2850,
+                value=2840,
                 step=1,
-                key="aisle_width_mm"
+                key="rack_aisle_width_mm"
             )
 
-            if aisle_width_mm < 2850:
-                st.error("Minimum aisle width for rack stacking is 2850 mm.")
+            if aisle_width_mm < 2840:
+                st.error("Minimum rack stacking aisle width is 2840 mm pallet-to-pallet. Less than this is not accepted.")
+            else:
+                st.info("The more the available aisle space, the faster the process.")
 
-        if pickup_type == "Conveyor":
-            conveyor_height = st.number_input(
-                "Conveyor Height [mm]",
-                min_value=0,
-                value=0,
-                step=1,
-                key="conveyor_height"
-            )
-
-            conveyor_picture = st.file_uploader(
-                "Upload Conveyor Picture",
-                type=["jpg", "jpeg", "png", "pdf"],
-                key="conveyor_picture"
-            )
-
-            load_at_edge = st.radio(
-                "Does the load arrive at the edge of the conveyor?",
-                ["Yes", "No"],
-                key="load_at_edge"
-            )
-
-            if load_at_edge == "No":
-                distance_from_edge = st.number_input(
-                    "Distance from Conveyor Edge to Pallet [mm]",
-                    min_value=0,
-                    value=0,
-                    step=1,
-                    key="distance_from_edge"
-                )
-
+    # Narrow Aisle
     if "Narrow Aisle" in application:
         st.info("Narrow Aisle (XNA121 / XNA151): recommended aisle width 1.78–2.0 m")
 
@@ -292,7 +320,7 @@ def build_header_inputs():
         elif load_weight_kg > 1200 and max_stacking_height_m > 3.5:
             st.warning("For loads above 1200 kg, maximum stacking height is 3.5 m.")
 
-    # validations
+    # Validations
     if "Transport / Cross Docking" in application and cross_docking_aisle is not None:
         is_valid, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg)
         if color == "red":
@@ -320,7 +348,7 @@ def build_header_inputs():
         else:
             st.success(msg)
 
-    # operational basics
+    # Operational Basics
     st.markdown("### Operational Basics")
     col_op1, col_op2 = st.columns(2)
 
@@ -349,11 +377,6 @@ def build_header_inputs():
             step=1,
             key="shifts_per_day"
         )
-        temperature_range = st.selectbox(
-        "Temperature Range (°C)",
-        ["Below 0", "1-10", "10-20", "20-30", "30-40"],
-        key="temperature_range"
-    )
 
     with col_op2:
         hours_per_shift = st.text_input(
@@ -407,6 +430,7 @@ def build_header_inputs():
         "survey_date": survey_date.strftime("%Y-%m-%d"),
 
         "application": application,
+        "application_type": application_type,
         "task_description": task_description,
         "temperature_range": temperature_range,
 
