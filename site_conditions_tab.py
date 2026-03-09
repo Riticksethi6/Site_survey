@@ -49,14 +49,12 @@ def build_site_conditions_inputs():
             key="charging_status"
         )
 
-
     battery_heating = st.checkbox(
         "Battery Heating Required (for cold storage < -15°C)",
         value=False,
         key="battery_heating"
     )
 
-    # Additional fields for template completeness
     network_coverage = st.text_area(
         "Wireless / RF Survey Details (coverage, access points, interference)",
         height=100,
@@ -64,18 +62,14 @@ def build_site_conditions_inputs():
         key="network_coverage"
     )
 
-
     # Return all fields – charging_stations reused from charging_status for template compatibility
     return {
         "other_agvs": other_agvs,
         "other_traffic": other_traffic,
-        
         "ramp_gradient_deg": ramp_gradient_deg,
         "parking_area": parking_area,
         "charging_status": charging_status,
-       
         "battery_heating": battery_heating,
         "network_coverage": network_coverage,
-
         "charging_stations": charging_status  # reused for template
     }
