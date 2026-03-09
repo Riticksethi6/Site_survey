@@ -1,80 +1,82 @@
-# secondary_tab.py – Material Flow / Transport Paths / Photos
+# data_flow_tab.py – Data Flow & Connections
+# Complete version – aligned with your template and form flow
 
 import streamlit as st
-from io import BytesIO
-from PIL import Image
 
-def build_material_flow_inputs():
-    st.subheader("2. Material Flow & Transport Paths")
+def build_data_flow_inputs():
+    """
+    Collects data flow, system integration requirements, and connections/interfaces.
+    All fields are mapped to template placeholders.
+    """
+    st.subheader("3. Data Flow & Connections")
 
-    st.markdown("**Specify key transport paths and distances in the warehouse**")
-
-    # Collect multiple flow steps dynamically
-    num_flows = st.number_input(
-        "Number of Transport Flows / Jobs",
-        min_value=1,
-        max_value=10,
-        value=1,
-        step=1,
-        key="num_flows"
+    # Main integration requirements
+    integration_req = st.text_area(
+        "System Integration / Data Flow Requirements",
+        height=160,
+        placeholder="Describe any required integration with WMS, ERP, MES, conveyor controls, "
+                    "data formats, protocols (e.g. REST, MQTT, OPC UA), real-time vs batch, etc.",
+        key="integration_req"
     )
 
-    flow_steps = []
-    distances = []
-    photos = []
+    # Detailed data flow description
+    data_flow_text = st.text_area(
+        "Data Flow & System Integration (WMS, API, ERP, etc.)",
+        height=160,
+        placeholder="Detail the expected data flow:\n"
+                    "- What triggers the tasks?\n"
+                    "- Which WMS play major role Customer/EP?\n"
+                    "- API needed to connect Customer's WMS?\n"
+                    "- Any required handshakes with conveyors, palletizers, etc.?\n"
+                    "- Fleet management / traffic control integration?",
+        key="data_flow_text"
+    )
 
-    for i in range(num_flows):
-        st.markdown(f"**Flow Step #{i+1}**")
-        col1, col2 = st.columns(2)
+    # Connections / Interfaces multiselect
+    connections = st.multiselect(
+        "Connections / Interfaces to Other Equipment",
+        options=[
+            "Fire Alarm System",
+            "Automatic Doors / Gates",
+            "Conveyors / Roller Tables",
+            "Palletizers / Depalletizers",
+            "Elevators / Vertical Conveyors",
+            "Production Machines / Lines",
+            "WMS / ERP / MES",
+            "Traffic Lights / Signals",
+            "Barcode / RFID Readers",
+            "Other"
+        ],
+        default=[],
+        key="connections"
+    )
 
-        with col1:
-            start_point = st.text_input(
-                f"Start Location #{i+1}",
-                placeholder="e.g. Receiving Area",
-                key=f"start_{i}"
-            )
-            end_point = st.text_input(
-                f"End Location #{i+1}",
-                placeholder="e.g. Storage Zone A",
-                key=f"end_{i}"
-            )
-        with col2:
-            distance_m = st.number_input(
-                f"Distance [m] Step #{i+1}",
-                min_value=1.0,
-                max_value=500.0,
-                value=50.0,
-                step=1.0,
-                key=f"distance_{i}"
-            )
-            photo = st.file_uploader(
-                f"Upload Photo (optional) Step #{i+1}",
-                type=["png", "jpg", "jpeg"],
-                key=f"photo_{i}"
-            )
+    # Details field – enabled only if connections are selected
+    connections_details = st.text_area(
+        "Details on Connections / Interfaces",
+        height=120,
+        placeholder="Provide details for each selected connection:\n"
+                    "- Interface type (digital I/O, Ethernet/IP, Profinet, REST API, etc.)\n"
+                    "- Required signals / data exchange\n"
+                    "- Handshake protocol\n"
+                    "- Safety-related interlocks (e.g. emergency stop propagation)",
+        disabled=not connections,
+        key="connections_details"
+    )
 
-        flow_steps.append({
-            "start": start_point.strip(),
-            "end": end_point.strip(),
-            "distance_m": distance_m
-        })
-        distances.append(distance_m)
-        if photo:
-            photos.append(BytesIO(photo.read()))
-        else:
-            photos.append(None)
-
-    # Optional extra notes
-    general_notes = st.text_area(
-        "Additional Notes / Special Requirements",
+    # Optional: Any additional notes
+    additional_notes = st.text_area(
+        "Additional Notes / Special Requirements (optional)",
         height=80,
-        placeholder="e.g. high-traffic zones, forklifts crossing, conveyor integration",
-        key="material_flow_notes"
+        placeholder="E.g. real-time requirements, latency limits, fallback behavior, "
+                    "cybersecurity constraints, preferred communication standards, etc.",
+        key="data_flow_additional_notes"
     )
 
     return {
-        "flow_steps": flow_steps,
-        "distances": distances,
-        "photos": photos,
-        "material_flow_notes": general_notes.strip()
+        "integration_req": integration_req.strip(),
+        "data_flow_text": data_flow_text.strip(),
+        "connections": connections,
+        "connections_details": connections_details.strip(),
+        "data_flow_additional_notes": additional_notes.strip()  # optional extra field
     }
