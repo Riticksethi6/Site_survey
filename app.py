@@ -304,4 +304,5 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
 
         except Exception as e:
             st.error(f"Error: {str(e)}")
+            st.error("Error: {day}")
             progress_bar.progress(0)
