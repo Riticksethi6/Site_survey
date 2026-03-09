@@ -93,7 +93,7 @@ def build_header_inputs():
     
     # Application(s) after customer info
     application = st.multiselect(
-        "Application(s) * (select all that apply)",
+        st.markdown("## Application(s) * (select all that apply)"),
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
         key="application"
     )
