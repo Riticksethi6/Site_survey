@@ -21,85 +21,38 @@ def build_header_inputs():
     with col2:
         survey_date = st.date_input("Survey Date", datetime.today(), key="survey_date")
 
-
-
-    # Checkbox to add multiple pallets
-    add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
-
-    # List to hold pallet data
-    pallets = []
-
-    # First pallet always shown
-    st.markdown("#### Pallet 1")
-    pallet_type_1 = st.radio("Type of Pallets", ["Euro", "Industrial", "Other"], horizontal=True, key="pallet_type_1")
-
-    other_pallet_type_1 = ""
-    if pallet_type_1 == "Other":
-        other_pallet_type_1 = st.text_input("Specify pallet type", key="other_pallet_type_1")
-
-    load_dimensions_1 = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions_1")
-
-    # Parse L and W for insertion depth options
-    dimensions_parts = load_dimensions_1.split('×')
-    options = []
-    if len(dimensions_parts) >= 2:
-        try:
-            l = int(dimensions_parts[0].strip())
-            w = int(dimensions_parts[1].strip())
-            options = [l, w]
-        except ValueError:
-            pass
-
-    pallet_width_mm_1 = st.selectbox("Insertion Depth (Fork Entry) [mm]", options if options else [1200], key="pallet_width_mm_1")
-
-    pallets.append({
-        "pallet_type": pallet_type_1,
-        "other_pallet_type": other_pallet_type_1,
-        "load_dimensions": load_dimensions_1,
-        "pallet_width_mm": pallet_width_mm_1
-    })
-    # Additional pallets if checkbox is selected
-    if add_multiple_pallets:
-        num_additional = st.number_input("Number of Additional Pallets", min_value=1, max_value=5, value=1, key="num_additional_pallets")
-        for i in range(1, num_additional + 1):
-            st.markdown(f"#### Pallet {i+1}")
-            pallet_type_i = st.radio(f"Type of Pallets {i+1}", ["Euro", "Industrial", "Other"], horizontal=True, key=f"pallet_type_{i+1}")
-
-            other_pallet_type_i = ""
-            if pallet_type_i == "Other":
-                other_pallet_type_i = st.text_input(f"Specify pallet type {i+1}", key=f"other_pallet_type_{i+1}")
-
-            load_dimensions_i = st.text_input(f"Load Dimensions (L×W×H) [mm] {i+1}", "1200×800×1500", key=f"load_dimensions_{i+1}")
-
-            # Parse L and W for insertion depth options
-            dimensions_parts_i = load_dimensions_i.split('×')
-            options_i = []
-            if len(dimensions_parts_i) >= 2:
-                try:
-                    l_i = int(dimensions_parts_i[0].strip())
-                    w_i = int(dimensions_parts_i[1].strip())
-                    options_i = [l_i, w_i]
-                except ValueError:
-                    pass
-
-            pallet_width_mm_i = st.selectbox(f"Insertion Depth (Fork Entry) [mm] {i+1}", options_i if options_i else [1200], key=f"pallet_width_mm_{i+1}")
-
-            pallets.append({
-                "pallet_type": pallet_type_i,
-                "other_pallet_type": other_pallet_type_i,
-                "load_dimensions": load_dimensions_i,
-                "pallet_width_mm": pallet_width_mm_i
-            })
     
+
+    # Pallet type after short description
+    pallet_type = st.radio("Type of Pallets", ["Euro", "Industrial", "Other"], horizontal=True, key="pallet_type")
+
+    # If Other, ask for specify
+    other_pallet_type = ""
+    other_pallet_dimensions = ""
+    if pallet_type == "Other":
+        other_pallet_type = st.text_input("Specify pallet type", key="other_pallet_type")
+        other_pallet_dimensions = st.text_input("Specify pallet dimensions (L×W×H) [mm]", key="other_pallet_dimensions")
+        
+    # Pallet width and load dimensions after pallet type
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        load_dimensions = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions")
+        
+    with col_p2:
+        pallet_width_mm = st.number_input("Insertion Depth (Fork Entry) [mm]", min_value=0, value=1200, step=1, key="pallet_width_mm")  # integer
     # Application(s) after customer info
+    st.markdown("### Application(s) * (select all that apply)")
     application = st.multiselect(
-        st.markdown("## Application(s) * (select all that apply)"),
+        "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
         key="application"
     )
 
     # Short description right after application
     task_description = st.text_area("Job-To-Do", height=120, key="task_description")
+
+    
+
     # Temperature Range in Basic Information
     temperature_range = st.selectbox("Temperature Range (°C)", ["Below 0", "1-10", "10-20", "20-30", "30-40"], key="temperature_range")
 
