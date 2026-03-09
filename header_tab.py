@@ -44,7 +44,7 @@ def build_header_inputs():
     # Pallet width and load dimensions after pallet type
     col_p1, col_p2 = st.columns(2)
     with col_p1:
-        pallet_width_mm = st.number_input("Pallet Width (Fork Entry) [mm]", min_value=0, value=800.0, key="pallet_width_mm")
+        pallet_width_mm = st.number_input("Pallet Width (Fork Entry) [mm]", min_value=0.0, value=800.0, key="pallet_width_mm")
     with col_p2:
         load_dimensions = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions")
 
