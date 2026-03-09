@@ -62,7 +62,7 @@ def build_header_inputs():
     if add_multiple_pallets:
         num_additional = st.number_input("Number of Additional Pallets", min_value=1, max_value=5, value=1, key="num_additional_pallets")
         for i in range(1, num_additional + 1):
-            st.markdown(f"### Pallet {i+1}")
+            st.markdown(f"## Pallet {i+1}")
             pallet_type_i = st.radio(f"Type of Pallets {i+1}", ["Euro", "Industrial", "Other"], horizontal=True, key=f"pallet_type_{i+1}")
 
             other_pallet_type_i = ""
