@@ -58,6 +58,9 @@ def build_header_inputs():
         "load_dimensions": load_dimensions_1,
         "pallet_width_mm": pallet_width_mm_1
     })
+    # Checkbox to add multiple pallets
+    add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
+
     # Additional pallets if checkbox is selected
     if add_multiple_pallets:
         num_additional = st.number_input("Number of Additional Pallets", min_value=1, max_value=5, value=1, key="num_additional_pallets")
@@ -139,8 +142,6 @@ def build_header_inputs():
 
     if "Stacking/Conveyor" in application:
         st.info("Stacking / Conveyor (XQE122): 1200 kg up to 4.5 m, 1500 kg up to 3.5 m")
-        fork_entry_width = st.number_input("Fork Entry Width Required (min 320 mm)", min_value=0, value=320, step=1, key="fork_entry_width")  # integer
-
         pickup_type = st.radio("Pickup Type", ["Ground", "Conveyor", "Other"], key="pickup_type")
 
         # Stacking Type shows for all pickup types
@@ -252,7 +253,6 @@ def build_header_inputs():
         "application": application,
         "task_description": task_description,
         "pallets": pallets,  # list of pallet dicts
-    
         "cross_docking_aisle": cross_docking_aisle,
         "fork_entry_width": st.session_state.get("fork_entry_width", 320),
         "aisle_width_m": st.session_state.get("aisle_width_m", 1.8),
