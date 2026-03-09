@@ -168,12 +168,6 @@ def build_header_inputs():
             if load_at_edge == "No":
                 distance_from_edge = st.number_input("Specify distance from conveyor edge to pallet [mm]", min_value=0, value=0, step=1, key="distance_from_edge")  # integer
 
-    # ── Narrow Aisle ─────────────────────────────────────────────────────────────
-    if "Narrow Aisle" in application:
-        st.info("Narrow Aisle (XNA121 / XNA151): 1.78–2.0 m aisle width")
-        aisle_width_m = st.number_input("Actual Aisle Width [m] (must be 1.78–2.0 m)", min_value=1.5, value=1.8, step=0.1, key="aisle_width_m")
-        xna_model = st.selectbox("Preferred Model", ["XNA121 (up to 8.5m)", "XNA151 (up to 13m)"], key="xna_model")
-
     # ── Load weight (if relevant) ────────────────────────────────────────────────
     load_weight_kg = 1200
     if any(app in application for app in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
@@ -189,6 +183,13 @@ def build_header_inputs():
             st.warning("Standard max stacking height is 4.5 m for 1200 kg; special arrangements needed for up to 5.5 m.")
         elif load_weight_kg > 1200 and max_stacking_height_m > 3.5:
             st.warning("Max stacking height is 3.5 m for 1500 kg.")
+    # ── Narrow Aisle ─────────────────────────────────────────────────────────────
+    if "Narrow Aisle" in application:
+        st.info("Narrow Aisle (XNA121 / XNA151): 1.78–2.0 m aisle width")
+        aisle_width_m = st.number_input("Actual Aisle Width [m] (must be 1.78–2.0 m)", min_value=1.5, value=1.8, step=0.1, key="aisle_width_m")
+        xna_model = st.selectbox("Preferred Model", ["XNA121 (up to 8.5m)", "XNA151 (up to 13m)"], key="xna_model")
+
+    
 
     # ── Validations ──────────────────────────────────────────────────────────────
     if "Transport / Cross Docking" in application and cross_docking_aisle is not None:
