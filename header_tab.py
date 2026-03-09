@@ -48,7 +48,7 @@ def build_header_inputs():
     with col_p2:
         load_dimensions = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions")
 
-    st.markdown("### Truck-Specific Requirements")
+    st.markdown("### Application-Specific Requirements")
 
     # ── Transport / Cross Docking ───────────────────────────────────────────────
     xpl_sub_type = None
