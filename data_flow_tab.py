@@ -1,82 +1,56 @@
-# data_flow_tab.py – Data Flow & Connections
-# Complete version – aligned with your template and form flow
+# data_flow_tab.py
 
 import streamlit as st
 
-def build_data_flow_inputs():
-    """
-    Collects data flow, system integration requirements, and connections/interfaces.
-    All fields are mapped to template placeholders.
-    """
-    st.subheader("3. Data Flow & Connections")
 
-    # Main integration requirements
-    integration_req = st.text_area(
-        "System Integration / Data Flow Requirements",
-        height=160,
-        placeholder="Describe any required integration with WMS, ERP, MES, conveyor controls, "
-                    "data formats, protocols (e.g. REST, MQTT, OPC UA), real-time vs batch, etc.",
+def build_data_flow_inputs():
+    st.subheader("3. Data Flow & Integration")
+
+    integration_req = st.radio(
+        "Is system integration required?",
+        ["Yes", "No"],
+        horizontal=True,
         key="integration_req"
     )
 
-    # Detailed data flow description
-    data_flow_text = st.text_area(
-        "Data Flow & System Integration (WMS, API, ERP, etc.)",
-        height=160,
-        placeholder="Detail the expected data flow:\n"
-                    "- What triggers the tasks?\n"
-                    "- Which WMS play major role Customer/EP?\n"
-                    "- API needed to connect Customer's WMS?\n"
-                    "- Any required handshakes with conveyors, palletizers, etc.?\n"
-                    "- Fleet management / traffic control integration?",
-        key="data_flow_text"
+    wms_owner = st.selectbox(
+        "Which WMS is the system of record?",
+        ["Customer", "EP", "Other", "No WMS"],
+        key="wms_owner"
     )
 
-    # Connections / Interfaces multiselect
-    connections = st.multiselect(
+    api_required = st.radio(
+        "Is an API required to connect to the customer system?",
+        ["Yes", "No", "Not Sure"],
+        horizontal=True,
+        key="api_required"
+    )
+
+    connections = st.text_input(
         "Connections / Interfaces to Other Equipment",
-        options=[
-            "Fire Alarm System",
-            "Automatic Doors / Gates",
-            "Conveyors / Roller Tables",
-            "Palletizers / Depalletizers",
-            "Elevators / Vertical Conveyors",
-            "Production Machines / Lines",
-            "WMS / ERP / MES",
-            "Traffic Lights / Signals",
-            "Barcode / RFID Readers",
-            "Other"
-        ],
-        default=[],
+        placeholder="Example: WMS, ERP, conveyor PLC, dock door system",
         key="connections"
     )
 
-    # Details field – enabled only if connections are selected
     connections_details = st.text_area(
-        "Details on Connections / Interfaces",
+        "Connection / Interface Details",
         height=120,
-        placeholder="Provide details for each selected connection:\n"
-                    "- Interface type (digital I/O, Ethernet/IP, Profinet, REST API, etc.)\n"
-                    "- Required signals / data exchange\n"
-                    "- Handshake protocol\n"
-                    "- Safety-related interlocks (e.g. emergency stop propagation)",
-        disabled=not connections,
+        placeholder="Describe what data needs to be exchanged and with which systems.",
         key="connections_details"
     )
 
-    # Optional: Any additional notes
-    additional_notes = st.text_area(
-        "Additional Notes / Special Requirements (optional)",
-        height=80,
-        placeholder="E.g. real-time requirements, latency limits, fallback behavior, "
-                    "cybersecurity constraints, preferred communication standards, etc.",
-        key="data_flow_additional_notes"
+    data_flow_text = st.text_area(
+        "Data Flow Description",
+        height=140,
+        placeholder="Describe how orders, tasks, confirmations, and status updates should flow between systems.",
+        key="data_flow_text"
     )
 
     return {
-        "integration_req": integration_req.strip(),
-        "data_flow_text": data_flow_text.strip(),
+        "integration_req": integration_req,
+        "wms_owner": wms_owner,
+        "api_required": api_required,
         "connections": connections,
-        "connections_details": connections_details.strip(),
-        "data_flow_additional_notes": additional_notes.strip()  # optional extra field
+        "connections_details": connections_details,
+        "data_flow_text": data_flow_text,
     }

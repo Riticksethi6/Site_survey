@@ -77,17 +77,9 @@ def build_header_inputs():
         for i in range(2, num_additional + 2):
             pallets.append(_build_pallet_block(i))
 
-    application_type = st.selectbox(
-        "Application Type",
-        ["Standard", "Custom", "High Load", "Other"],
-        key="application_type"
-    )
+    
 
-    temperature_range = st.selectbox(
-        "Temperature Range (°C)",
-        ["Below 0", "1-10", "10-20", "20-30", "30-40"],
-        key="temperature_range"
-    )
+    
 
     st.markdown("### Application(s) * (select all that apply)")
     application = st.multiselect(
@@ -357,6 +349,11 @@ def build_header_inputs():
             step=1,
             key="shifts_per_day"
         )
+        temperature_range = st.selectbox(
+        "Temperature Range (°C)",
+        ["Below 0", "1-10", "10-20", "20-30", "30-40"],
+        key="temperature_range"
+    )
 
     with col_op2:
         hours_per_shift = st.text_input(
@@ -410,7 +407,6 @@ def build_header_inputs():
         "survey_date": survey_date.strftime("%Y-%m-%d"),
 
         "application": application,
-        "application_type": application_type,
         "task_description": task_description,
         "temperature_range": temperature_range,
 
