@@ -49,12 +49,49 @@ def build_material_flow_inputs():
         )
         distances.append(dist)
 
-    st.markdown("### Photos")
+    st.markdown("### Material Flow Photos")
     photos = st.file_uploader(
         "Upload Site / Material Flow Photos",
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
         key="material_flow_photos"
+    )
+
+    st.markdown("### Zone Layout Uploads")
+    inbound_zone_file = st.file_uploader(
+        "Upload Inbound Zone Layout / Picture",
+        type=["jpg", "jpeg", "png", "pdf", "dwg", "zip"],
+        key="inbound_zone_file"
+    )
+
+    outbound_zone_file = st.file_uploader(
+        "Upload Outbound Zone Layout / Picture",
+        type=["jpg", "jpeg", "png", "pdf", "dwg", "zip"],
+        key="outbound_zone_file"
+    )
+
+    storage_zone_file = st.file_uploader(
+        "Upload Storage Zone Layout / Picture",
+        type=["jpg", "jpeg", "png", "pdf", "dwg", "zip"],
+        key="storage_zone_file"
+    )
+
+    production_zone_file = st.file_uploader(
+        "Upload Production Zone Layout / Picture",
+        type=["jpg", "jpeg", "png", "pdf", "dwg", "zip"],
+        key="production_zone_file"
+    )
+
+    staging_zone_file = st.file_uploader(
+        "Upload Staging / Buffer Zone Layout / Picture",
+        type=["jpg", "jpeg", "png", "pdf", "dwg", "zip"],
+        key="staging_zone_file"
+    )
+
+    other_zone_file = st.file_uploader(
+        "Upload Other Zone Layout / Picture",
+        type=["jpg", "jpeg", "png", "pdf", "dwg", "zip"],
+        key="other_zone_file"
     )
 
     return {
@@ -63,4 +100,10 @@ def build_material_flow_inputs():
         "special_comments": special_comments,
         "distances": distances,
         "photos": photos if photos else [],
+        "inbound_zone_file": inbound_zone_file,
+        "outbound_zone_file": outbound_zone_file,
+        "storage_zone_file": storage_zone_file,
+        "production_zone_file": production_zone_file,
+        "staging_zone_file": staging_zone_file,
+        "other_zone_file": other_zone_file,
     }
