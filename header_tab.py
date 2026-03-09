@@ -21,18 +21,6 @@ def build_header_inputs():
     with col2:
         survey_date = st.date_input("Survey Date", datetime.today(), key="survey_date")
 
-    
-
-    # Pallet type after short description
-    pallet_type = st.radio("Type of Pallets", ["Euro", "Industrial", "Other"], horizontal=True, key="pallet_type")
-
-    # If Other, ask for specify
-    other_pallet_type = ""
-    other_pallet_dimensions = ""
-    if pallet_type == "Other":
-        other_pallet_type = st.text_input("Specify pallet type", key="other_pallet_type")
-        other_pallet_dimensions = st.text_input("Specify pallet dimensions (L×W×H) [mm]", key="other_pallet_dimensions")
-
     # Application(s) after customer info
     application = st.multiselect(
         "Application(s) * (select all that apply)",
@@ -43,12 +31,74 @@ def build_header_inputs():
     # Short description right after application
     task_description = st.text_area("Job-To-Do", height=120, key="task_description")
 
-    # Pallet width and load dimensions after pallet type
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-        pallet_width_mm = st.number_input("Pallet Width (Fork Entry) [mm]", min_value=0, value=800, step=1, key="pallet_width_mm")  # integer
-    with col_p2:
-        load_dimensions = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions")
+    # Checkbox to add multiple pallets
+    add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
+
+    # List to hold pallet data
+    pallets = []
+
+    # First pallet always shown
+    st.markdown("### Pallet 1")
+    pallet_type_1 = st.radio("Type of Pallets", ["Euro", "Industrial", "Other"], horizontal=True, key="pallet_type_1")
+
+    other_pallet_type_1 = ""
+    if pallet_type_1 == "Other":
+        other_pallet_type_1 = st.text_input("Specify pallet type", key="other_pallet_type_1")
+
+    load_dimensions_1 = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions_1")
+
+    # Parse L and W for insertion depth options
+    dimensions_parts = load_dimensions_1.split('×')
+    options = []
+    if len(dimensions_parts) >= 2:
+        try:
+            l = int(dimensions_parts[0].strip())
+            w = int(dimensions_parts[1].strip())
+            options = [l, w]
+        except ValueError:
+            pass
+
+    pallet_width_mm_1 = st.selectbox("Insertion Depth (Fork Entry) [mm]", options if options else [1200], key="pallet_width_mm_1")
+
+    pallets.append({
+        "pallet_type": pallet_type_1,
+        "other_pallet_type": other_pallet_type_1,
+        "load_dimensions": load_dimensions_1,
+        "pallet_width_mm": pallet_width_mm_1
+    })
+
+    # Additional pallets if checkbox is selected
+    if add_multiple_pallets:
+        num_additional = st.number_input("Number of Additional Pallets", min_value=1, max_value=5, value=1, key="num_additional_pallets")
+        for i in range(1, num_additional + 1):
+            st.markdown(f"### Pallet {i+1}")
+            pallet_type_i = st.radio(f"Type of Pallets {i+1}", ["Euro", "Industrial", "Other"], horizontal=True, key=f"pallet_type_{i+1}")
+
+            other_pallet_type_i = ""
+            if pallet_type_i == "Other":
+                other_pallet_type_i = st.text_input(f"Specify pallet type {i+1}", key=f"other_pallet_type_{i+1}")
+
+            load_dimensions_i = st.text_input(f"Load Dimensions (L×W×H) [mm] {i+1}", "1200×800×1500", key=f"load_dimensions_{i+1}")
+
+            # Parse L and W for insertion depth options
+            dimensions_parts_i = load_dimensions_i.split('×')
+            options_i = []
+            if len(dimensions_parts_i) >= 2:
+                try:
+                    l_i = int(dimensions_parts_i[0].strip())
+                    w_i = int(dimensions_parts_i[1].strip())
+                    options_i = [l_i, w_i]
+                except ValueError:
+                    pass
+
+            pallet_width_mm_i = st.selectbox(f"Insertion Depth (Fork Entry) [mm] {i+1}", options_i if options_i else [1200], key=f"pallet_width_mm_{i+1}")
+
+            pallets.append({
+                "pallet_type": pallet_type_i,
+                "other_pallet_type": other_pallet_type_i,
+                "load_dimensions": load_dimensions_i,
+                "pallet_width_mm": pallet_width_mm_i
+            })
 
     # Temperature Range in Basic Information
     temperature_range = st.selectbox("Temperature Range (°C)", ["Below 0", "1-10", "10-20", "20-30", "30-40"], key="temperature_range")
@@ -127,9 +177,9 @@ def build_header_inputs():
         xna_model = st.selectbox("Preferred Model", ["XNA121 (up to 8.5m)", "XNA151 (up to 13m)"], key="xna_model")
 
     # ── Load weight (if relevant) ────────────────────────────────────────────────
-    load_weight_kg = 1000
+    load_weight_kg = 1200
     if any(app in application for app in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
-        load_weight_kg = st.number_input("Load Weight [kg]", min_value=0, value=1200, step=1, key="load_weight_kg")  # integer, default 1200
+        load_weight_kg = st.number_input("Load Weight [kg]", min_value=0, value=1200, step=1, key="load_weight_kg")  # integer
         if pallet_type == "Euro" and load_weight_kg > 1500:
             st.warning("Euro pallet cannot bear more than 1500 kg. Please select 'Other' in type of pallet and specify the type and dimensions.")
 
@@ -200,19 +250,9 @@ def build_header_inputs():
         "project_location": project_location,
         "survey_date": survey_date.strftime("%Y-%m-%d"),
         "application": application,
-        "pallet_type": pallet_type,
-        "pallet_width_mm": pallet_width_mm,
-        "load_weight_kg": load_weight_kg,
-        "load_dimensions": load_dimensions,
-        "max_stacking_height_m": max_stacking_height_m,
         "task_description": task_description,
-        "peak_congestion": peak_congestion,
-        "max_transport_m": max_transport_m,
-        "pallets_per_hour": pallets_per_hour,
-        "shifts_per_day": shifts_per_day,
-        "peak_hours": peak_hours,
-        "special_layout": special_layout,
-        "network_status": network_status,
+        "pallets": pallets,  # list of pallet dicts
+        "temperature_range": temperature_range,
         "cross_docking_aisle": cross_docking_aisle,
         "fork_entry_width": st.session_state.get("fork_entry_width", 320),
         "aisle_width_m": st.session_state.get("aisle_width_m", 1.8),
@@ -220,8 +260,6 @@ def build_header_inputs():
         "unloading_aisle_mm": unloading_aisle_mm,
         "clearance_height_m": clearance_height_m,
         "cad_file": cad_file,
-        "other_pallet_type": other_pallet_type,
-        "other_pallet_dimensions": other_pallet_dimensions,
         "xpl_sub_type": xpl_sub_type,
         "pickup_type": pickup_type,
         "stacking_type": stacking_type,
@@ -232,6 +270,14 @@ def build_header_inputs():
         "conveyor_picture": conveyor_picture,
         "load_at_edge": load_at_edge,
         "distance_from_edge": distance_from_edge,
-        "temperature_range": temperature_range,
-        "application_type": application_type
+        "peak_congestion": peak_congestion,
+        "max_transport_m": max_transport_m,
+        "pallets_per_hour": pallets_per_hour,
+        "shifts_per_day": shifts_per_day,
+        "peak_hours": peak_hours,
+        "special_layout": special_layout,
+        "network_status": network_status,
+        "load_weight_kg": load_weight_kg,
+        "max_stacking_height_m": max_stacking_height_m,
+        
     }
