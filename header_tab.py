@@ -217,22 +217,72 @@ def build_header_inputs():
     col_op1, col_op2 = st.columns(2)
 
     with col_op1:
-        peak_congestion = st.text_area("Site Peak Congestion Description", height=100, key="peak_congestion")
-        max_transport_m = st.number_input("Maximum Transport Distance [m]", min_value=0.0, value=50.0, key="max_transport_m")
-        pallets_per_hour = st.number_input("Pallets per Hour (peak)", min_value=0, value=50, key="pallets_per_hour")
-        shifts_per_day = st.number_input("Shifts per Day", 1, 3, value=2, key="shifts_per_day")
+        avg_transport_m = st.number_input(
+            "Average Travelling Distance [m]",
+            min_value=0.0,
+            value=30.0,
+            key="avg_transport_m"
+        )
+
+        pallets_per_hour = st.number_input(
+            "Pallets per Hour (peak)",
+            min_value=0,
+            value=50,
+            key="pallets_per_hour"
+        )
+
+        shifts_per_day = st.number_input(
+            "Shifts per Day",
+            1,
+            3,
+            value=2,
+            key="shifts_per_day"
+        )
 
     with col_op2:
-        peak_hours = st.text_input("Operational Peak Hours", "08:00–12:00 & 14:00–18:00", key="peak_hours")
-        special_layout = st.text_area("Special Layout Requirements", height=80, key="special_layout")
-        network_status = st.text_area("Site Network Status / WiFi Coverage", height=80, key="network_status")
+        hours_per_shift = st.number_input(
+            "Hours per Shift",
+            min_value=0.0,
+            value=8.0,
+            step=0.5,
+            key="hours_per_shift"
+        )
 
-    picking_aisle_mm = st.number_input("Picking Aisle Width [mm]", min_value=0.0, value=1800.0, key="picking_aisle_mm")
-    unloading_aisle_mm = st.number_input("Unloading Aisle Width [mm]", min_value=0.0, value=2900.0, key="unloading_aisle_mm")
-    clearance_height_m = st.number_input("Clearance Height Under Platform / Obstacles [m]", min_value=0.0, value=5.0, key="clearance_height_m")
+        special_layout = st.text_area(
+            "Special Layout Requirements",
+            height=80,
+            key="special_layout"
+        )
+
+        network_status = st.text_area(
+            "Site Network Status / WiFi Coverage",
+            height=80,
+            key="network_status"
+        )
+
+    # ── Platform Path Check ─────────────────────────────────────────────────────
+    st.markdown("### Platform Clearance")
+
+    path_under_platform = st.radio(
+        "Are there any paths under the platform?",
+        ["No", "Yes"],
+        key="path_under_platform"
+    )
+
+    clearance_height_m = None
+
+    if path_under_platform == "Yes":
+        clearance_height_m = st.number_input(
+            "Height under platform [m]",
+            min_value=0.0,
+            value=2.5,
+            step=0.1,
+            key="clearance_height_m"
+        )
 
     # ── CAD upload ───────────────────────────────────────────────────────────────
     st.markdown("### Site Layout / CAD Upload")
+
     cad_file = st.file_uploader(
         "Upload CAD file, floor plan or layout drawing (DWG, PDF, PNG, JPG, etc.)",
         type=["dwg", "pdf", "png", "jpg", "jpeg", "zip"],
@@ -253,8 +303,7 @@ def build_header_inputs():
         "cross_docking_aisle": cross_docking_aisle,
         "fork_entry_width": st.session_state.get("fork_entry_width", 320),
         "aisle_width_m": st.session_state.get("aisle_width_m", 1.8),
-        "picking_aisle_mm": picking_aisle_mm,
-        "unloading_aisle_mm": unloading_aisle_mm,
+
         "clearance_height_m": clearance_height_m,
         "cad_file": cad_file,
         "xpl_sub_type": xpl_sub_type,
@@ -267,11 +316,12 @@ def build_header_inputs():
         "conveyor_picture": conveyor_picture,
         "load_at_edge": load_at_edge,
         "distance_from_edge": distance_from_edge,
-        "peak_congestion": peak_congestion,
-        "max_transport_m": max_transport_m,
+        "avg_transport_m": avg_transport_m,
+        "path_under_platform": path_under_platform,
+        "clearance_height_m": clearance_height_m,
         "pallets_per_hour": pallets_per_hour,
         "shifts_per_day": shifts_per_day,
-        "peak_hours": peak_hours,
+        "peak_hours": hours_per_shift,
         "special_layout": special_layout,
         "network_status": network_status,
         "load_weight_kg": load_weight_kg,
