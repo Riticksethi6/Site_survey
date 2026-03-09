@@ -25,38 +25,7 @@ def build_header_inputs():
 
     # Checkbox to add multiple pallets
     add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
-# Additional pallets if checkbox is selected
-    if add_multiple_pallets:
-        num_additional = st.number_input("Number of Additional Pallets", min_value=1, max_value=5, value=1, key="num_additional_pallets")
-        for i in range(1, num_additional + 1):
-            st.markdown(f"### Pallet {i+1}")
-            pallet_type_i = st.radio(f"Type of Pallets {i+1}", ["Euro", "Industrial", "Other"], horizontal=True, key=f"pallet_type_{i+1}")
 
-            other_pallet_type_i = ""
-            if pallet_type_i == "Other":
-                other_pallet_type_i = st.text_input(f"Specify pallet type {i+1}", key=f"other_pallet_type_{i+1}")
-
-            load_dimensions_i = st.text_input(f"Load Dimensions (L×W×H) [mm] {i+1}", "1200×800×1500", key=f"load_dimensions_{i+1}")
-
-            # Parse L and W for insertion depth options
-            dimensions_parts_i = load_dimensions_i.split('×')
-            options_i = []
-            if len(dimensions_parts_i) >= 2:
-                try:
-                    l_i = int(dimensions_parts_i[0].strip())
-                    w_i = int(dimensions_parts_i[1].strip())
-                    options_i = [l_i, w_i]
-                except ValueError:
-                    pass
-
-            pallet_width_mm_i = st.selectbox(f"Insertion Depth (Fork Entry) [mm] {i+1}", options_i if options_i else [1200], key=f"pallet_width_mm_{i+1}")
-
-            pallets.append({
-                "pallet_type": pallet_type_i,
-                "other_pallet_type": other_pallet_type_i,
-                "load_dimensions": load_dimensions_i,
-                "pallet_width_mm": pallet_width_mm_i
-            })
     # List to hold pallet data
     pallets = []
 
@@ -89,7 +58,38 @@ def build_header_inputs():
         "load_dimensions": load_dimensions_1,
         "pallet_width_mm": pallet_width_mm_1
     })
+    # Additional pallets if checkbox is selected
+    if add_multiple_pallets:
+        num_additional = st.number_input("Number of Additional Pallets", min_value=1, max_value=5, value=1, key="num_additional_pallets")
+        for i in range(1, num_additional + 1):
+            st.markdown(f"### Pallet {i+1}")
+            pallet_type_i = st.radio(f"Type of Pallets {i+1}", ["Euro", "Industrial", "Other"], horizontal=True, key=f"pallet_type_{i+1}")
 
+            other_pallet_type_i = ""
+            if pallet_type_i == "Other":
+                other_pallet_type_i = st.text_input(f"Specify pallet type {i+1}", key=f"other_pallet_type_{i+1}")
+
+            load_dimensions_i = st.text_input(f"Load Dimensions (L×W×H) [mm] {i+1}", "1200×800×1500", key=f"load_dimensions_{i+1}")
+
+            # Parse L and W for insertion depth options
+            dimensions_parts_i = load_dimensions_i.split('×')
+            options_i = []
+            if len(dimensions_parts_i) >= 2:
+                try:
+                    l_i = int(dimensions_parts_i[0].strip())
+                    w_i = int(dimensions_parts_i[1].strip())
+                    options_i = [l_i, w_i]
+                except ValueError:
+                    pass
+
+            pallet_width_mm_i = st.selectbox(f"Insertion Depth (Fork Entry) [mm] {i+1}", options_i if options_i else [1200], key=f"pallet_width_mm_{i+1}")
+
+            pallets.append({
+                "pallet_type": pallet_type_i,
+                "other_pallet_type": other_pallet_type_i,
+                "load_dimensions": load_dimensions_i,
+                "pallet_width_mm": pallet_width_mm_i
+            })
     
     # Application(s) after customer info
     application = st.multiselect(
