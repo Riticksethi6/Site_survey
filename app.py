@@ -78,25 +78,25 @@ if 'load_dimensions' in all_data and all_data.get('max_stacking_height_m'):
     except:
         all_data['boxes_stacked'] = 'N/A'
 
-# ── PRODUCT SPECS DISPLAY ─────────────────────────────────────────────────
-# st.header("Product Standards & Recommendations")
-# from products import PRODUCT_SPECS
-# selected_apps = all_data.get("application", [])
-# for app in selected_apps:
-#     if app == "Transport / Cross Docking":
-#         st.subheader("XPL201 Specs")
-#         st.json(PRODUCT_SPECS["XPL201"])
-#     elif app == "Stacking/Conveyor":
-#         st.subheader("XQE122 Specs")
-#         st.json(PRODUCT_SPECS["XQE122"])
-#     elif app == "Narrow Aisle":
-#         st.subheader("XNA Specs")
-#         st.json(PRODUCT_SPECS["XNA121"])
-#         st.json(PRODUCT_SPECS["XNA151"])
+# ── PRODUCT SPECS DISPLAY + RECOMMENDED STANDARD LAYOUT ─────────────────
+st.header("Product Standards & Recommended Layouts")
+from products import PRODUCT_SPECS
+
+if selected_apps:
+    for app in selected_apps:
+        if app == "Transport / Cross Docking":
+            st.subheader("XPL201 Specs & Recommended Layout")
+            st.json(PRODUCT_SPECS["XPL201"])
+        elif app == "Stacking/Conveyor":
+            st.subheader("XQE122 Specs & Recommended Layout")
+            st.json(PRODUCT_SPECS["XQE122"])
+        elif app == "Narrow Aisle":
+            st.subheader("XNA Specs & Recommended Layout")
+            st.json(PRODUCT_SPECS["XNA121"])
+            st.json(PRODUCT_SPECS["XNA151"])
 
 # ── REFERENCE PDFs ────────────────────────────────────────────────────────
 st.header("Reference – Layout Specifications (Euro Pallets)")
-
 col_pdf1, col_pdf2 = st.columns(2)
 
 with col_pdf1:
@@ -134,7 +134,6 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
     else:
         progress_bar = st.progress(0)
         status_text = st.empty()
-
         status_text.text("Preparing data & recommendations...")
         progress_bar.progress(10)
 
@@ -170,85 +169,23 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
                 if context.get(key) == default_val:
                     context[key] = 'N/A'  # or '' to hide completely
 
-            # For strings that are default/empty
             string_defaults = [
-                "warehouse_area", "peak_congestion", "special_layout", "network_status", "other_agvs", "other_traffic", "parking_area", "charging_status",
-                "safety_assessment", "network_coverage", "positioning_req", "docking_equipment", "special_demand", "storage_layout", "other_pallet_type", "other_pallet_dimensions"
+                "warehouse_area", "peak_congestion", "special_layout", "network_status", "other_agvs",
+                "other_traffic", "parking_area", "charging_status", "safety_assessment", "network_coverage",
+                "positioning_req", "docking_equipment", "special_demand", "storage_layout",
+                "other_pallet_type", "other_pallet_dimensions"
             ]
             for key in string_defaults:
                 if not context.get(key):
-                    context[key] = 'N/A'  # or ''
+                    context[key] = 'N/A'
 
-            # For None values
             none_defaults = ["xpl_sub_type", "pickup_type", "stacking_type", "load_at_edge", "environment", "xna_model"]
             for key in none_defaults:
                 if context.get(key) is None:
                     context[key] = 'N/A'
 
-            # For booleans
             if context.get("battery_heating") == False:
                 context["battery_heating"] = 'No'
-
-            # Recommendation + fleet estimate
-            recommendations = []
-            fleet_estimates = []
-            from product_validators import validate_xpl201, validate_xqe122, validate_xna121_151
-            validation_summary = []
-            pallets_hr = all_data.get("pallets_per_hour", 0)
-            avg_dist = all_data.get("avg_transport_m", 0)
-            shifts = all_data.get("shifts_per_day", 1)
-
-            if "Transport / Cross Docking" in selected_apps:
-                aisle = all_data.get("cross_docking_aisle", 1.8)
-                weight = all_data.get("load_weight_kg", 1000)
-                is_valid, msg, color = validate_xpl201(aisle, weight)
-                validation_summary.append(f"XPL201 ({all_data.get('xpl_sub_type', 'N/A')}): {msg} ({color})")
-                if is_valid or color == "orange":
-                    speed = 1.75
-                    cycle_time = (avg_dist * 2 / speed) + 30
-                    fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2))
-                    recommendations.append(f"XPL201 – {all_data.get('xpl_sub_type', 'Cross Docking')} – Fast transport, floor-level, up to 2000 kg")
-                    fleet_estimates.append(f"XPL201: ~{fleet_size} vehicles")
-
-            if "Stacking/Conveyor" in selected_apps:
-                fork_entry_width = all_data.get("fork_entry_width", 320)
-                is_valid, msg, color = validate_xqe122(
-                    all_data.get("load_weight_kg", 1000),
-                    all_data.get("max_stacking_height_m", 3.0),
-                    fork_entry_width
-                )
-                validation_summary.append(f"XQE122: {msg} ({color})")
-                if is_valid or color == "orange":
-                    speed = 1.0
-                    cycle_time = (avg_dist * 2 / speed) + 45
-                    fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2))
-                    recommendations.append("XQE122 – Stacking up to 5.5 m, 1200–1500 kg")
-                    fleet_estimates.append(f"XQE122: ~{fleet_size} vehicles")
-
-            if "Narrow Aisle" in selected_apps:
-                model = all_data.get("xna_model", "XNA121 (up to 8.5m)")
-                is_valid, msg, color = validate_xna121_151(
-                    all_data.get("aisle_width_m", 1.8),
-                    all_data.get("load_weight_kg", 1000),
-                    all_data.get("max_stacking_height_m", 3.0),
-                    model
-                )
-                validation_summary.append(f"{model}: {msg} ({color})")
-                if is_valid or color == "orange":
-                    speed = 1.0
-                    cycle_time = (avg_dist * 2 / speed) + 60
-                    fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2))
-                    recommendations.append(f"{model} – Narrow aisle stacking")
-                    fleet_estimates.append(f"{model}: ~{fleet_size} vehicles")
-
-            context["recommendation"] = "\n\n".join(recommendations) or "No clear match"
-            context["fleet_recommendation"] = "\n".join(fleet_estimates)
-            context["validation_summary"] = "\n".join(validation_summary) or "All valid"
-
-            # ROI hint
-            workers = site_data.get("whiteboard_workers", 0) + site_data.get("night_workers", 0)
-            labor_savings = workers * shifts * 20000
-            context["roi_hint"] = f"Potential annual labor savings: €{labor_savings:,}"
 
             # ── Render Word ────────────────────────────────
             doc = DocxTemplate(TEMPLATE_PATH)
@@ -259,39 +196,31 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
             timestamp = datetime.now().strftime("%Y%m%d_%H%M")
             safe_name = all_data.get("customer_name","customer").replace(" ","_")
             filename = f"site_survey_{safe_name}_{timestamp}.docx"
-            # ── ZIP creation ───────────────────────────────
+
+            # ── ZIP creation ─────────────────────────────
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-                # Add report
                 zip_file.writestr(filename, report_buffer.read())
-
                 # Add photos
                 photos = material_flow_data.get("photos", [])
                 for i, photo in enumerate(photos):
                     if photo:
                         zip_file.writestr(f"photo_{i}.png", photo.getbuffer())
-
-                # Add conveyor picture
+                # Conveyor picture
                 conveyor_picture = all_data.get("conveyor_picture")
                 if conveyor_picture:
                     zip_file.writestr("conveyor_picture.png", conveyor_picture.getbuffer())
-
-                # Add CAD file
+                # CAD file
                 cad_file = all_data.get("cad_file")
                 if cad_file:
                     zip_file.writestr(cad_file.name, cad_file.getbuffer())
 
             zip_buffer.seek(0)
-
             with st.expander("📩 Next Step"):
                 st.markdown(
-                    """
-                    **Report generated successfully.**
-
-                    Please download the report below and email it to:
-
-                    **ritick.sethi@ep-equipment.eu**
-                    """
+                    "**Report generated successfully.**\n\n"
+                    "Please download the report below and email it to:\n\n"
+                    "**ritick.sethi@ep-equipment.eu**"
                 )
                 st.download_button(
                     label="⬇️ Download Report ZIP",
@@ -299,9 +228,6 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
                     file_name=f"report_{safe_name}_{timestamp}.zip",
                     mime="application/zip"
                 )
-            # Dashboard Summary
-            # (your original code)
-
         except Exception as e:
             st.error(f"Error: {str(e)}")
             progress_bar.progress(0)
