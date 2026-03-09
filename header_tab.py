@@ -1,8 +1,5 @@
-# header_tab.py – Updated with Temperature selectbox in Basic Information
-# Pickup Type and Stacking Type now include "Other"
-# Stacking Type shows for both Ground and Conveyor
-# Values like 1200.00 displayed as 1200
-# Application Type after Type of Pallet
+# header_tab.py – Complete version with Transport/Cross Docking sub-type, aisle for both,
+# pickup type for Stacking/Conveyor, conveyor picture, short description after application
 
 import streamlit as st
 from datetime import datetime
@@ -48,11 +45,14 @@ def build_header_inputs():
     application_type = st.selectbox("Application Type", ["Standard", "Custom", "High Load", "Other"], key="application_type")
 
     # Pallet width and load dimensions after pallet type
-    col_p1, col2 = st.columns(2)
+    col_p1, col_p2 = st.columns(2)
     with col_p1:
         pallet_width_mm = st.number_input("Pallet Width (Fork Entry) [mm]", min_value=0, value=800, step=1, key="pallet_width_mm")  # integer
     with col_p2:
         load_dimensions = st.text_input("Load Dimensions (L×W×H) [mm]", "1200×800×1500", key="load_dimensions")
+
+    # Temperature Range in Basic Information
+    temperature_range = st.selectbox("Temperature Range (°C)", ["Below 0", "1-10", "10-20", "20-30", "30-40"], key="temperature_range")
 
     st.markdown("### Application-Specific Requirements")
 
@@ -73,7 +73,7 @@ def build_header_inputs():
             step=0.1,
             help="Recommended minimum 1.8 m for one-way driving/loading (conservative value). "
                  "Refer to XPL Layout and Aisle Planning Specification for details "
-                 "(e.g. 1.5–1.8 m driving, 3.0 m loading one side, etc.).",
+                 "(e.g., 1.5–1.8 m driving, 3.0 m loading one side, etc.).",
             key="cross_docking_aisle"
         )
 
@@ -94,18 +94,8 @@ def build_header_inputs():
 
         pickup_type = st.radio("Pickup Type", ["Ground", "Conveyor", "Other"], key="pickup_type")
 
-        if pickup_type == "Other":
-            pickup_type_other = st.text_input("Specify Other Pickup Type", key="pickup_type_other")
-        else:
-            pickup_type_other = ""
-
         # Stacking Type shows for all pickup types
         stacking_type = st.radio("Stacking Type", ["Floor Stacking", "Rack Stacking", "Other"], key="stacking_type")
-
-        if stacking_type == "Other":
-            stacking_type_other = st.text_input("Specify Other Stacking Type", key="stacking_type_other")
-        else:
-            stacking_type_other = ""
 
         if stacking_type == "Floor Stacking":
             storage_layout = st.text_area("Storage Layout Description", height=80, key="storage_layout")
@@ -140,7 +130,7 @@ def build_header_inputs():
     # ── Load weight (if relevant) ────────────────────────────────────────────────
     load_weight_kg = 1000
     if any(app in application for app in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
-        load_weight_kg = st.number_input("Load Weight [kg]", min_value=0, value=1000, step=1, key="load_weight_kg")  # integer
+        load_weight_kg = st.number_input("Load Weight [kg]", min_value=0, value=1200, step=1, key="load_weight_kg")  # integer, default 1200
         if pallet_type == "Euro" and load_weight_kg > 1500:
             st.warning("Euro pallet cannot bear more than 1500 kg. Please select 'Other' in type of pallet and specify the type and dimensions.")
 
@@ -181,8 +171,8 @@ def build_header_inputs():
 
     with col_op1:
         peak_congestion = st.text_area("Site Peak Congestion Description", height=100, key="peak_congestion")
-        max_transport_m = st.number_input("Maximum Transport Distance [m]", min_value=0.0, value=50.0, step=0.5, key="max_transport_m")
-        pallets_per_hour = st.number_input("Pallets per Hour (peak)", min_value=0, value=50, step=1, key="pallets_per_hour")
+        max_transport_m = st.number_input("Maximum Transport Distance [m]", min_value=0.0, value=50.0, key="max_transport_m")
+        pallets_per_hour = st.number_input("Pallets per Hour (peak)", min_value=0, value=50, key="pallets_per_hour")
         shifts_per_day = st.number_input("Shifts per Day", 1, 3, value=2, key="shifts_per_day")
 
     with col_op2:
@@ -190,9 +180,9 @@ def build_header_inputs():
         special_layout = st.text_area("Special Layout Requirements", height=80, key="special_layout")
         network_status = st.text_area("Site Network Status / WiFi Coverage", height=80, key="network_status")
 
-    picking_aisle_mm = st.number_input("Picking Aisle Width [mm]", min_value=0, value=1800, step=1, key="picking_aisle_mm")  # integer
-    unloading_aisle_mm = st.number_input("Unloading Aisle Width [mm]", min_value=0, value=2900, step=1, key="unloading_aisle_mm")  # integer
-    clearance_height_m = st.number_input("Clearance Height Under Platform / Obstacles [m]", min_value=0.0, value=5.0, step=0.1, key="clearance_height_m")
+    picking_aisle_mm = st.number_input("Picking Aisle Width [mm]", min_value=0.0, value=1800.0, key="picking_aisle_mm")
+    unloading_aisle_mm = st.number_input("Unloading Aisle Width [mm]", min_value=0.0, value=2900.0, key="unloading_aisle_mm")
+    clearance_height_m = st.number_input("Clearance Height Under Platform / Obstacles [m]", min_value=0.0, value=5.0, key="clearance_height_m")
 
     # ── CAD upload ───────────────────────────────────────────────────────────────
     st.markdown("### Site Layout / CAD Upload")
@@ -242,5 +232,7 @@ def build_header_inputs():
         "conveyor_height": conveyor_height,
         "conveyor_picture": conveyor_picture,
         "load_at_edge": load_at_edge,
-        "distance_from_edge": distance_from_edge
+        "distance_from_edge": distance_from_edge,
+        "temperature_range": temperature_range,
+        "application_type": application_type
     }
