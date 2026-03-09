@@ -230,6 +230,13 @@ def build_header_inputs():
             value=50,
             key="pallets_per_hour"
         )
+        pallets_per_day = st.number_input(
+            "Pallets per Day (peak)",
+            min_value=0,
+            value=50,
+            key="pallets_per_day"
+        )
+
 
         shifts_per_day = st.number_input(
             "Shifts per Day",
@@ -320,6 +327,7 @@ def build_header_inputs():
         "path_under_platform": path_under_platform,
         "clearance_height_m": clearance_height_m,
         "pallets_per_hour": pallets_per_hour,
+        "pallets_per_day": pallets_per_day,
         "shifts_per_day": shifts_per_day,
         "peak_hours": hours_per_shift,
         "special_layout": special_layout,
