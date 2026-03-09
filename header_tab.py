@@ -149,7 +149,7 @@ def build_header_inputs():
             box_distance_mm = st.number_input("Distance between 2 boxes stacked next to each other [mm]", min_value=0, value=200, step=1, key="box_distance_mm")  # integer
             if box_distance_mm < 200:
                 st.error("Minimum distance between boxes for floor stacking is 200 mm. Not accepted.")
-            aisle_width_mm = st.number_input("Aisle Width for Floor Stacking [mm]", min_value=0, value=1640, step=1, key="aisle_width_mm")  # integer
+            aisle_width_mm = st.number_input("Floor Storage Aisle Width [mm]", min_value=0, value=1640, step=1, key="aisle_width_mm")  # integer
             if aisle_width_mm < 1640:
                 st.error("Minimum aisle width for floor stacking is 1640 mm (1240 mm truck width + 200 mm both sides). Not accepted.")
 
