@@ -252,7 +252,7 @@ def build_header_inputs():
         "application": application,
         "task_description": task_description,
         "pallets": pallets,  # list of pallet dicts
-        "temperature_range": temperature_range,
+    
         "cross_docking_aisle": cross_docking_aisle,
         "fork_entry_width": st.session_state.get("fork_entry_width", 320),
         "aisle_width_m": st.session_state.get("aisle_width_m", 1.8),
