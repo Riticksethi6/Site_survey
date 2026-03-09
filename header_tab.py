@@ -21,15 +21,7 @@ def build_header_inputs():
     with col2:
         survey_date = st.date_input("Survey Date", datetime.today(), key="survey_date")
 
-    # Application(s) after customer info
-    application = st.multiselect(
-        "Application(s) * (select all that apply)",
-        ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
-        key="application"
-    )
-
-    # Short description right after application
-    task_description = st.text_area("Short Description of the Task / Overall Operation", height=120, key="task_description")
+    
 
     # Pallet type after short description
     pallet_type = st.radio("Type of Pallets", ["Euro", "Industrial", "Other"], horizontal=True, key="pallet_type")
@@ -41,8 +33,15 @@ def build_header_inputs():
         other_pallet_type = st.text_input("Specify pallet type", key="other_pallet_type")
         other_pallet_dimensions = st.text_input("Specify pallet dimensions (L×W×H) [mm]", key="other_pallet_dimensions")
 
-    # Application Type after Type of Pallet
-    application_type = st.selectbox("Application Type", ["Standard", "Custom", "High Load", "Other"], key="application_type")
+    # Application(s) after customer info
+    application = st.multiselect(
+        "Application(s) * (select all that apply)",
+        ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
+        key="application"
+    )
+
+    # Short description right after application
+    task_description = st.text_area("Job-To-Do", height=120, key="task_description")
 
     # Pallet width and load dimensions after pallet type
     col_p1, col_p2 = st.columns(2)
