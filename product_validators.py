@@ -49,8 +49,7 @@ def validate_xqe122(load_weight_kg, max_stacking_height_m, fork_entry_width):
     """
     issues = []
 
-    if fork_entry_width < 320:
-        issues.append(f"Minimum fork entry width for XQE122 is 320 mm. Current: {fork_entry_width} mm")
+
 
     if load_weight_kg > 1500:
         issues.append(f"XQE122 maximum load capacity is 1500 kg. Current: {load_weight_kg} kg")

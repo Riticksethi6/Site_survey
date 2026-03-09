@@ -210,8 +210,7 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
             if "Stacking/Conveyor" in selected_apps:
                 is_valid, msg, color = validate_xqe122(
                     all_data.get("load_weight_kg", 1000),
-                    all_data.get("max_stacking_height_m", 3.0),
-                    all_data.get("fork_entry_width", 320)
+                    all_data.get("max_stacking_height_m", 3.0)
                 )
                 validation_summary.append(f"XQE122: {msg} ({color})")
                 if is_valid or color == "orange":
