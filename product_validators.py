@@ -13,15 +13,15 @@ def validate_xpl201(aisle_width_m, load_weight_kg):
         issues.append(
             f"Minimum aisle width for XPL201 (one-way driving) is 1.5 m according to the XPL Layout and Aisle Planning Specification. "
             f"Current: {aisle_width_m} m is too narrow. "
-            "Full recommended values from specification (Euro Pallets):\n"
-            "• Driving (One-way): 1.5–1.8 m\n"
-            "• Driving (Two-way): 3.0–3.6 m\n"
-            "• Turning (One-way): 2.3 m\n"
-            "• Turning (Two-way): 3.8 m\n"
-            "• Loading/Unloading (One-way, one side): 3.0 m\n"
-            "• Loading/Unloading (One-way, both sides): 3.5 m\n"
-            "• Loading/Unloading (Two-way, one side): 4.0 m\n"
-            "• Loading/Unloading (Two-way, both sides): 4.5–5.6 m\n"
+            "Full table from specification (Euro Pallets):\n"
+            "• Driving (One-way road): 1.5 m\n"
+            "• Driving (Two-way road): 3.0 m\n"
+            "• Turning (One-way road): 2.3 m\n"
+            "• Turning (Two-way road): 3.8 m\n"
+            "• Loading/Unloading (One-way, drop-off on one side): 3.0 m\n"
+            "• Loading/Unloading (One-way, drop-off on both sides): 3.5 m\n"
+            "• Loading/Unloading (Two-way, drop-off on one side): 4.0 m\n"
+            "• Loading/Unloading (Two-way, drop-off on both sides): 4.5–5.6 m\n"
             "Note: More aisle space allows higher driving speed, larger safety detection fields, faster pallet throughput, easier commissioning and tuning."
         )
     elif aisle_width_m < 1.8:
@@ -35,7 +35,7 @@ def validate_xpl201(aisle_width_m, load_weight_kg):
         issues.append(f"XPL201 maximum load capacity is 2000 kg. Current: {load_weight_kg} kg")
 
     if issues:
-        is_critical = any("maximum" in issue.lower() or "load capacity" in issue.lower() for issue in issues)
+        is_critical = any("load capacity" in issue.lower() for issue in issues)
         color = "red" if is_critical else "orange"
         return False, "\n".join(issues), color
 
@@ -58,6 +58,11 @@ def validate_xqe122(load_weight_kg, max_stacking_height_m, fork_entry_width):
         issues.append(f"For loads > 1200 kg, maximum stacking height is 3.5 m. Current: {max_stacking_height_m} m")
     elif max_stacking_height_m > 5.5:
         issues.append(f"XQE122 maximum stacking height is 5.5 m (at 1200 kg, special arrangements required). Current: {max_stacking_height_m} m")
+
+    # Add aisle check from new PDF
+    # Note: If you have aisle_width_mm for XQE, uncomment and adjust
+    # if aisle_width_mm < 2500:
+    #     issues.append(f"Minimum straight passage aisle for XQE122 (one-way) is 2.5 m. Current: {aisle_width_mm / 1000:.1f} m. Turning radius reference 500 mm.")
 
     if issues:
         is_critical = any("maximum" in issue.lower() or "load capacity" in issue.lower() for issue in issues)
