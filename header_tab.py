@@ -169,9 +169,9 @@ def build_header_inputs():
     col_op1, col_op2 = st.columns(2)
 
     with col_op1:
+        pallets_per_hour = st.number_input("Pallets per Hour (peak)", min_value=0, value=50, key="pallets_per_hour")
         peak_congestion = st.text_area("Site Peak Congestion Description", height=100, key="peak_congestion")
         max_transport_m = st.number_input("Maximum Transport Distance [m]", min_value=0.0, value=50.0, key="max_transport_m")
-        pallets_per_hour = st.number_input("Pallets per Hour (peak)", min_value=0, value=50, key="pallets_per_hour")
         shifts_per_day = st.number_input("Shifts per Day", 1, 3, value=2, key="shifts_per_day")
 
     with col_op2:
