@@ -26,9 +26,41 @@ def build_data_flow_inputs():
         key="api_required"
     )
 
+    st.markdown("### Equipment / System Connections")
+
+    fire_door_connection = st.selectbox(
+        "Fire Door Connection Required",
+        ["No", "Yes", "Not Sure"],
+        key="fire_door_connection"
+    )
+
+    fire_alarm_connection = st.selectbox(
+        "Fire Alarm Connection Required",
+        ["No", "Yes", "Not Sure"],
+        key="fire_alarm_connection"
+    )
+
+    conveyor_connection = st.selectbox(
+        "Conveyor Connection Required",
+        ["No", "Yes", "Not Sure"],
+        key="conveyor_connection"
+    )
+
+    automatic_door_connection = st.selectbox(
+        "Automatic Door Connection Required",
+        ["No", "Yes", "Not Sure"],
+        key="automatic_door_connection"
+    )
+
+    production_unit_connection = st.selectbox(
+        "Production Unit Connection Required",
+        ["No", "Yes", "Not Sure"],
+        key="production_unit_connection"
+    )
+
     connections = st.text_input(
-        "Connections / Interfaces to Other Equipment",
-        placeholder="Example: WMS, ERP, conveyor PLC, dock door system",
+        "Other Connections / Interfaces",
+        placeholder="Example: ERP, WMS, lifts, PLC, scanners, dock systems",
         key="connections"
     )
 
@@ -42,15 +74,29 @@ def build_data_flow_inputs():
     data_flow_text = st.text_area(
         "Data Flow Description",
         height=140,
-        placeholder="Describe how orders, tasks, confirmations, and status updates should flow between systems.",
+        placeholder="Describe how orders, tasks, confirmations, alarms, and status updates should flow between systems.",
         key="data_flow_text"
+    )
+
+    connection_summary = (
+        f"Fire Door: {fire_door_connection}, "
+        f"Fire Alarm: {fire_alarm_connection}, "
+        f"Conveyor: {conveyor_connection}, "
+        f"Automatic Doors: {automatic_door_connection}, "
+        f"Production Units: {production_unit_connection}"
     )
 
     return {
         "integration_req": integration_req,
         "wms_owner": wms_owner,
         "api_required": api_required,
+        "fire_door_connection": fire_door_connection,
+        "fire_alarm_connection": fire_alarm_connection,
+        "conveyor_connection": conveyor_connection,
+        "automatic_door_connection": automatic_door_connection,
+        "production_unit_connection": production_unit_connection,
         "connections": connections,
         "connections_details": connections_details,
         "data_flow_text": data_flow_text,
+        "connection_summary": connection_summary,
     }
