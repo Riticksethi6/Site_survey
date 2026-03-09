@@ -94,7 +94,7 @@ def build_header_inputs():
     # Application(s) after customer info
     st.markdown("### Application(s) * (select all that apply)")
     application = st.multiselect(
-        "",
+        "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
         key="application"
     )
@@ -180,7 +180,7 @@ def build_header_inputs():
     load_weight_kg = 1200
     if any(app in application for app in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
         load_weight_kg = st.number_input("Load Weight [kg]", min_value=0, value=1200, step=1, key="load_weight_kg")  # integer
-        if pallet_type == "Euro" and load_weight_kg > 1500:
+        if pallets and pallets[0]["pallet_type"] == "Euro" and load_weight_kg > 1500:
             st.warning("Euro pallet cannot bear more than 1500 kg. Please select 'Other' in type of pallet and specify the type and dimensions.")
 
     # ── Max stacking height (if relevant) ────────────────────────────────────────
