@@ -74,4 +74,4 @@ PRODUCT_SPECS = {
         "max_lift_height_m": 13.0,
         "min_aisle_width_m": 1.65
     }
-}
+}  # handling added
