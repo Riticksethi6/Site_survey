@@ -29,7 +29,7 @@ def build_header_inputs():
     )
 
     # Short description right after application
-    task_description = st.text_area("Short Description of the Task / Overall Operation", height=120, key="task_description")
+    task_description = st.text_area("Job To Do", height=120, key="task_description")
 
     # Pallet type after short description
     pallet_type = st.radio("Type of Pallets", ["Euro", "Industrial", "Other"], horizontal=True, key="pallet_type")
