@@ -1,28 +1,22 @@
 # customer_requirements_tab.py – Specification + Customer Demands
-# This tab is for internal / pre-sales / CHN team use only (not customer-facing)
-# All fields are collected and rendered directly in the template.docx bottom section
+# Internal / Pre-Sales Use Only – mapped to template.docx
 
 import streamlit as st
 
 def build_customer_requirements_inputs():
-    """
-    Internal tab – Specification + Customer Demands
-    These fields are not shown to customers during survey.
-    They are filled by EP team after analysis and before final review.
-    """
     st.subheader("5. Specification + Customer Demands (Internal / Pre-Sales Use Only)")
-    st.info("This section is for EP internal team only. Fill after site survey and analysis.")
+    st.info("For EP internal team only. Fill after site survey and analysis.")
 
-    # System integration & data flow (also appears in tab 3 – here for final confirmation)
+    # System integration & data flow
     integration_req = st.text_area(
         "System Integration / Data Flow Requirements (final)",
         height=160,
         placeholder="Summarize final integration needs after discussion with customer",
-        value=st.session_state.get("integration_req", ""),  # can pre-fill from tab 3 if desired
+        value=st.session_state.get("integration_req_prefill", ""),
         key="demands_integration_req"
     )
 
-    # Product specs & quantity (recommendation summary)
+    # Product specs & quantity
     product_specs = st.text_input(
         "Product Specifications & Quantity",
         placeholder="e.g. 8 × XPL201, 4 × XQE122, 2 × XNA151, specific customization",
@@ -36,7 +30,7 @@ def build_customer_requirements_inputs():
         key="payment_terms"
     )
 
-    # Desired / proposed timeline
+    # Desired timeline
     timeline = st.text_area(
         "Desired Project Timeline / Phases",
         height=100,
@@ -64,10 +58,12 @@ def build_customer_requirements_inputs():
     team = st.text_area(
         "Project Team / Contacts",
         height=100,
-        placeholder="Project Manager: John Doe (john@ep-equipment.eu)\n"
-                    "Sales Rep: Jane Smith\n"
-                    "Technical Lead: Alex Chen (CHN)\n"
-                    "Customer Contact: Customer XYZ",
+        placeholder=(
+            "Project Manager: John Doe (john@ep-equipment.eu)\n"
+            "Sales Rep: Jane Smith\n"
+            "Technical Lead: Alex Chen (CHN)\n"
+            "Customer Contact: Customer XYZ"
+        ),
         key="team"
     )
 

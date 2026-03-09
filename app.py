@@ -78,22 +78,22 @@ if 'load_dimensions' in all_data and all_data.get('max_stacking_height_m'):
     except:
         all_data['boxes_stacked'] = 'N/A'
 
-# ── PRODUCT SPECS DISPLAY + RECOMMENDED STANDARD LAYOUT ─────────────────
-st.header("Product Standards & Recommended Layouts")
-from products import PRODUCT_SPECS
+# # ── PRODUCT SPECS DISPLAY + RECOMMENDED STANDARD LAYOUT ─────────────────
+# st.header("Product Standards & Recommended Layouts")
+# from products import PRODUCT_SPECS
 
-if selected_apps:
-    for app in selected_apps:
-        if app == "Transport / Cross Docking":
-            st.subheader("XPL201 Specs & Recommended Layout")
-            st.json(PRODUCT_SPECS["XPL201"])
-        elif app == "Stacking/Conveyor":
-            st.subheader("XQE122 Specs & Recommended Layout")
-            st.json(PRODUCT_SPECS["XQE122"])
-        elif app == "Narrow Aisle":
-            st.subheader("XNA Specs & Recommended Layout")
-            st.json(PRODUCT_SPECS["XNA121"])
-            st.json(PRODUCT_SPECS["XNA151"])
+# if selected_apps:
+#     for app in selected_apps:
+#         if app == "Transport / Cross Docking":
+#             st.subheader("XPL201 Specs & Recommended Layout")
+#             st.json(PRODUCT_SPECS["XPL201"])
+#         elif app == "Stacking/Conveyor":
+#             st.subheader("XQE122 Specs & Recommended Layout")
+#             st.json(PRODUCT_SPECS["XQE122"])
+#         elif app == "Narrow Aisle":
+#             st.subheader("XNA Specs & Recommended Layout")
+#             st.json(PRODUCT_SPECS["XNA121"])
+#             st.json(PRODUCT_SPECS["XNA151"])
 
 # ── REFERENCE PDFs ────────────────────────────────────────────────────────
 st.header("Reference – Layout Specifications (Euro Pallets)")

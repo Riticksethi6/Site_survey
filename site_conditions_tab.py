@@ -7,7 +7,7 @@ import streamlit as st
 def build_site_conditions_inputs():
     st.subheader("4. Site Conditions & Safety")
 
-    st.markdown("**Please provide details to help assess site suitability for autonomous mobile robots.**")
+    st.markdown("**Provide details to assess site suitability for AMRs / AGVs.**")
 
     col1, col2 = st.columns(2)
 
@@ -62,14 +62,14 @@ def build_site_conditions_inputs():
         key="network_coverage"
     )
 
-    # Return all fields – charging_stations reused from charging_status for template compatibility
+    # Return all fields for template
     return {
-        "other_agvs": other_agvs,
-        "other_traffic": other_traffic,
+        "other_agvs": other_agvs.strip(),
+        "other_traffic": other_traffic.strip(),
         "ramp_gradient_deg": ramp_gradient_deg,
-        "parking_area": parking_area,
-        "charging_status": charging_status,
+        "parking_area": parking_area.strip(),
+        "charging_status": charging_status.strip(),
         "battery_heating": battery_heating,
-        "network_coverage": network_coverage,
-        "charging_stations": charging_status  # reused for template
+        "network_coverage": network_coverage.strip(),
+        "charging_stations": charging_status.strip()  # reused for template compatibility
     }

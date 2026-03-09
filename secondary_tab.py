@@ -1,78 +1,80 @@
-# secondary_tab.py – Material Flow (CAD upload moved to header tab)
+# secondary_tab.py – Material Flow / Transport Paths / Photos
 
 import streamlit as st
+from io import BytesIO
+from PIL import Image
 
 def build_material_flow_inputs():
-    st.subheader("2. Material Flow")
+    st.subheader("2. Material Flow & Transport Paths")
 
-    flow_steps = st.multiselect(
-        "Material Flow Sequence (in order)",
-        options=["Inbound", "Rack Storage", "Floor/Block Storage", "Production", "Outbound", "Buffer Storage", "Other"],
-        default=["Inbound", "Rack Storage", "Production", "Outbound"],
-        key="flow_steps"
+    st.markdown("**Specify key transport paths and distances in the warehouse**")
+
+    # Collect multiple flow steps dynamically
+    num_flows = st.number_input(
+        "Number of Transport Flows / Jobs",
+        min_value=1,
+        max_value=10,
+        value=1,
+        step=1,
+        key="num_flows"
     )
 
-    flow_summary = "Flow Sequence: " + " → ".join(flow_steps) + "\n\n"
+    flow_steps = []
     distances = []
     photos = []
 
-    for i, step in enumerate(flow_steps):
-        st.markdown(f"**Step {i+1}: {step}**")
+    for i in range(num_flows):
+        st.markdown(f"**Flow Step #{i+1}**")
+        col1, col2 = st.columns(2)
 
-        desc = st.text_area(
-            f"Description for {step}",
-            height=80,
-            key=f"{step}_desc_{i}"  # unique key to avoid collision
-        )
-
-        photo = st.file_uploader(
-            f"Photo / Diagram for {step}",
-            type=["jpg", "jpeg", "png", "pdf"],
-            key=f"{step}_photo_{i}"
-        )
-
-        pph = st.number_input(
-            f"Pallets per Hour in {step}",
-            min_value=0,
-            value=30,
-            step=1,
-            key=f"{step}_pph_{i}"
-        )
-
-        distance = 0.0
-        if i < len(flow_steps) - 1:
-            next_step = flow_steps[i + 1]
-            distance = st.number_input(
-                f"Distance from {step} to {next_step} [m]",
-                min_value=0.0,
-                value=30.0,
-                step=0.5,
-                key=f"dist_{step}_{next_step}_{i}"
+        with col1:
+            start_point = st.text_input(
+                f"Start Location #{i+1}",
+                placeholder="e.g. Receiving Area",
+                key=f"start_{i}"
+            )
+            end_point = st.text_input(
+                f"End Location #{i+1}",
+                placeholder="e.g. Storage Zone A",
+                key=f"end_{i}"
+            )
+        with col2:
+            distance_m = st.number_input(
+                f"Distance [m] Step #{i+1}",
+                min_value=1.0,
+                max_value=500.0,
+                value=50.0,
+                step=1.0,
+                key=f"distance_{i}"
+            )
+            photo = st.file_uploader(
+                f"Upload Photo (optional) Step #{i+1}",
+                type=["png", "jpg", "jpeg"],
+                key=f"photo_{i}"
             )
 
-        # Build summary text
-        flow_summary += f"{step}: {desc} ({pph} pallets/hour)"
-        if distance > 0:
-            flow_summary += f" – {distance} m to {next_step}"
-            distances.append(distance)
-        flow_summary += "\n\n"
-
+        flow_steps.append({
+            "start": start_point.strip(),
+            "end": end_point.strip(),
+            "distance_m": distance_m
+        })
+        distances.append(distance_m)
         if photo:
-            photos.append(photo)
+            photos.append(BytesIO(photo.read()))
+        else:
+            photos.append(None)
 
-    special_comments = st.text_area(
-        "Special Comments / Direct Flows / Notes",
-        height=100,
-        key="special_comments"
+    # Optional extra notes
+    general_notes = st.text_area(
+        "Additional Notes / Special Requirements",
+        height=80,
+        placeholder="e.g. high-traffic zones, forklifts crossing, conveyor integration",
+        key="material_flow_notes"
     )
 
-    if special_comments.strip():
-        flow_summary += f"\n\nSpecial Comments / Direct Flows (highlighted):\n{special_comments}"
-
     return {
-        "material_flow_text": flow_summary.strip(),
-        "flow_steps": " → ".join(flow_steps),
-        "special_comments": special_comments,
+        "flow_steps": flow_steps,
         "distances": distances,
-        "photos": photos  # list of uploaded file objects → handled in app.py
+        "photos": photos,
+        "material_flow_notes": general_notes.strip()
     }
