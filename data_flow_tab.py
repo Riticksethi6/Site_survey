@@ -15,7 +15,6 @@ def build_data_flow_inputs():
         "System Integration / Data Flow Requirements",
         height=160,
         placeholder="Describe any required integration with WMS, ERP, MES, conveyor controls, "
-                    "fire alarm systems, automatic doors, elevators, etc. Include API needs, "
                     "data formats, protocols (e.g. REST, MQTT, OPC UA), real-time vs batch, etc.",
         key="integration_req"
     )
@@ -25,9 +24,9 @@ def build_data_flow_inputs():
         "Data Flow & System Integration (WMS, API, ERP, etc.)",
         height=160,
         placeholder="Detail the expected data flow:\n"
-                    "- What triggers AMR movement?\n"
-                    "- Where does the AMR get task information?\n"
-                    "- What status does the AMR send back?\n"
+                    "- What triggers the tasks?\n"
+                    "- Which WMS play major role Customer/EP?\n"
+                    "- API needed to connect Customer's WMS?\n"
                     "- Any required handshakes with conveyors, palletizers, etc.?\n"
                     "- Fleet management / traffic control integration?",
         key="data_flow_text"
