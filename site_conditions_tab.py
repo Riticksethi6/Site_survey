@@ -24,15 +24,6 @@ def build_site_conditions_inputs():
             key="other_traffic"
         )
 
-        ground_gaps_mm = st.number_input(
-            "Ground Gaps / Depressions / Expansion Joints [mm width/depth]",
-            min_value=0.0,
-            value=0.0,
-            step=1.0,
-            help="Important for wheel/tracking stability. Max recommended gap < 20 mm.",
-            key="ground_gaps_mm"
-        )
-
         ramp_gradient_deg = st.number_input(
             "Ramp Gradient [°]",
             min_value=0.0,
@@ -58,21 +49,6 @@ def build_site_conditions_inputs():
             key="charging_status"
         )
 
-        whiteboard_workers = st.number_input(
-            "Number of Whiteboard / Manual Forklift Workers (Day)",
-            min_value=0,
-            value=0,
-            step=1,
-            key="whiteboard_workers"
-        )
-
-        night_workers = st.number_input(
-            "Number of Night-Shift Forklift Workers",
-            min_value=0,
-            value=0,
-            step=1,
-            key="night_workers"
-        )
 
     battery_heating = st.checkbox(
         "Battery Heating Required (for cold storage < -15°C)",
@@ -81,33 +57,6 @@ def build_site_conditions_inputs():
     )
 
     # Additional fields for template completeness
-    warehouse_area = st.text_input(
-        "Warehouse / Workshop Area (sq m)",
-        placeholder="Approximate total floor area",
-        key="warehouse_area"
-    )
-
-    storage_locations = st.number_input(
-        "Number of Storage Locations / Pallet Positions",
-        min_value=0,
-        value=0,
-        step=100,
-        key="storage_locations"
-    )
-
-    environment = st.selectbox(
-        "Environment Type",
-        ["Normal (ambient)", "Cold Storage (0 to -25°C)", "Freezer (<-25°C)", "Explosion-Proof", "High Temperature", "Wash-down / Hygienic", "Other"],
-        key="environment"
-    )
-
-    safety_assessment = st.text_area(
-        "Safety Assessment (pedestrian traffic, standards, hazards)",
-        height=100,
-        placeholder="e.g. high pedestrian density, required safety standards (ISO 3691-4, CE), emergency stop zones, speed limits",
-        key="safety_assessment"
-    )
-
     network_coverage = st.text_area(
         "Wireless / RF Survey Details (coverage, access points, interference)",
         height=100,
@@ -115,45 +64,18 @@ def build_site_conditions_inputs():
         key="network_coverage"
     )
 
-    positioning_req = st.text_area(
-        "Positioning Accuracy / Docking Requirements",
-        height=80,
-        placeholder="e.g. ±10 mm docking accuracy needed, laser reflector-free preferred, QR code or natural feature navigation",
-        key="positioning_req"
-    )
-
-    docking_equipment = st.text_area(
-        "Related Equipment to Dock (elevators, arms, conveyors, doors, etc.)",
-        height=80,
-        placeholder="List equipment AMR needs to interact with (e.g. roller conveyor, pallet dispenser, wrapping machine)",
-        key="docking_equipment"
-    )
-
-    special_demand = st.text_area(
-        "Special Demands (explosion-proof, temp adaptability, monitoring, etc.)",
-        height=80,
-        placeholder="e.g. ATEX Zone 1/2, -30°C to +40°C operation, remote monitoring, fleet size scalability",
-        key="special_demand"
-    )
 
     # Return all fields – charging_stations reused from charging_status for template compatibility
     return {
         "other_agvs": other_agvs,
         "other_traffic": other_traffic,
-        "ground_gaps_mm": ground_gaps_mm,
+        
         "ramp_gradient_deg": ramp_gradient_deg,
         "parking_area": parking_area,
         "charging_status": charging_status,
-        "whiteboard_workers": whiteboard_workers,
-        "night_workers": night_workers,
+       
         "battery_heating": battery_heating,
-        "warehouse_area": warehouse_area,
-        "storage_locations": storage_locations,
-        "environment": environment,
-        "safety_assessment": safety_assessment,
         "network_coverage": network_coverage,
-        "positioning_req": positioning_req,
-        "docking_equipment": docking_equipment,
-        "special_demand": special_demand,
+
         "charging_stations": charging_status  # reused for template
     }
