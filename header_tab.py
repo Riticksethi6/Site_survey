@@ -58,10 +58,7 @@ def build_header_inputs():
         "load_dimensions": load_dimensions_1,
         "pallet_width_mm": pallet_width_mm_1
     })
-    # Checkbox to add multiple pallets
-    add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
-
-    # Additional pallets if checkbox is selected
+       # Additional pallets if checkbox is selected
     if add_multiple_pallets:
         num_additional = st.number_input("Number of Additional Pallets", min_value=1, max_value=5, value=1, key="num_additional_pallets")
         for i in range(1, num_additional + 1):
