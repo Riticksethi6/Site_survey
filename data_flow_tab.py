@@ -6,61 +6,45 @@ import streamlit as st
 def build_data_flow_inputs():
     st.subheader("3. Data Flow & Integration")
 
-    integration_req = st.radio(
-        "Is system integration required?",
+    system_integration = st.multiselect(
+        "System Integration",
+        [
+            "Fire Door",
+            "Fire Alarm",
+            "Conveyor",
+            "Automatic Doors",
+            "Production Units",
+            "Elevators",
+            "Dock Doors",
+            "Other",
+        ],
+        key="system_integration"
+    )
+
+    integration_to_your_system_required = st.radio(
+        "Integration to your system required?",
         ["Yes", "No"],
         horizontal=True,
-        key="integration_req"
+        key="integration_to_your_system_required"
     )
 
-    wms_owner = st.selectbox(
-        "Which WMS is the system of record?",
-        ["Customer", "EP", "Other", "No WMS"],
-        key="wms_owner"
-    )
-
-    api_required = st.radio(
-        "Is an API required to connect to the customer system?",
-        ["Yes", "No", "Not Sure"],
-        horizontal=True,
-        key="api_required"
-    )
-
-    st.markdown("### Equipment / System Connections")
-
-    fire_door_connection = st.selectbox(
-        "Fire Door Connection Required",
-        ["No", "Yes", "Not Sure"],
-        key="fire_door_connection"
-    )
-
-    fire_alarm_connection = st.selectbox(
-        "Fire Alarm Connection Required",
-        ["No", "Yes", "Not Sure"],
-        key="fire_alarm_connection"
-    )
-
-    conveyor_connection = st.selectbox(
-        "Conveyor Connection Required",
-        ["No", "Yes", "Not Sure"],
-        key="conveyor_connection"
-    )
-
-    automatic_door_connection = st.selectbox(
-        "Automatic Door Connection Required",
-        ["No", "Yes", "Not Sure"],
-        key="automatic_door_connection"
-    )
-
-    production_unit_connection = st.selectbox(
-        "Production Unit Connection Required",
-        ["No", "Yes", "Not Sure"],
-        key="production_unit_connection"
-    )
+    systems_to_integrate = []
+    if integration_to_your_system_required == "Yes":
+        systems_to_integrate = st.multiselect(
+            "What all systems need to be integrated?",
+            [
+                "ERP",
+                "WMS",
+                "Fleet Manager",
+                "PLCs for Production",
+                "PLCs for Conveyors",
+            ],
+            key="systems_to_integrate"
+        )
 
     connections = st.text_input(
         "Other Connections / Interfaces",
-        placeholder="Example: ERP, WMS, lifts, PLC, scanners, dock systems",
+        placeholder="Example: scanners, lifts, dock systems, barcode systems",
         key="connections"
     )
 
@@ -78,25 +62,16 @@ def build_data_flow_inputs():
         key="data_flow_text"
     )
 
-    connection_summary = (
-        f"Fire Door: {fire_door_connection}, "
-        f"Fire Alarm: {fire_alarm_connection}, "
-        f"Conveyor: {conveyor_connection}, "
-        f"Automatic Doors: {automatic_door_connection}, "
-        f"Production Units: {production_unit_connection}"
-    )
+    system_integration_summary = ", ".join(system_integration) if system_integration else ""
+    systems_to_integrate_summary = ", ".join(systems_to_integrate) if systems_to_integrate else ""
 
     return {
-        "integration_req": integration_req,
-        "wms_owner": wms_owner,
-        "api_required": api_required,
-        "fire_door_connection": fire_door_connection,
-        "fire_alarm_connection": fire_alarm_connection,
-        "conveyor_connection": conveyor_connection,
-        "automatic_door_connection": automatic_door_connection,
-        "production_unit_connection": production_unit_connection,
+        "system_integration": system_integration,
+        "system_integration_summary": system_integration_summary,
+        "integration_to_your_system_required": integration_to_your_system_required,
+        "systems_to_integrate": systems_to_integrate,
+        "systems_to_integrate_summary": systems_to_integrate_summary,
         "connections": connections,
         "connections_details": connections_details,
         "data_flow_text": data_flow_text,
-        "connection_summary": connection_summary,
     }
