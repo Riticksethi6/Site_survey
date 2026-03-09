@@ -12,6 +12,8 @@ from datetime import datetime
 import os
 import shutil
 from PIL import Image
+from io import BytesIO
+import zipfile
 
 # ── CONFIG ────────────────────────────────────────────────────────────────
 TEMPLATE_PATH = "template.docx"
@@ -63,6 +65,7 @@ all_data = {
     **site_data,
 }
 
+selected_apps = all_data.get("application", [])
 # Compute derived fields
 distances = material_flow_data.get("distances", [])
 all_data["min_transport_m"] = min(distances) if distances else 0.0
@@ -251,7 +254,9 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
             report_buffer = BytesIO()
             doc.save(report_buffer)
             report_buffer.seek(0)
-
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            safe_name = all_data.get("customer_name","customer").replace(" ","_")
+            filename = f"site_survey_{safe_name}_{timestamp}.docx"
             # ── ZIP creation ───────────────────────────────
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
@@ -276,17 +281,22 @@ if st.button("Generate Word Report & Recommendations", type="primary"):
 
             zip_buffer.seek(0)
 
-            # ── Local saving (if local) ─────────────────────
-            # (your original code)
+            with st.expander("📩 Next Step"):
+                st.markdown(
+                    """
+                    **Report generated successfully.**
 
-            st.success(f"Report generated & downloaded as ZIP. Please send to riticksethi@ep-equipment.eu")
-            st.download_button(
-                label="Download Report ZIP",
-                data=zip_buffer,
-                file_name=f"report_{safe_name}_{timestamp}.zip",
-                mime="application/zip"
-            )
+                    Please download the report below and email it to:
 
+                    **ritick.sethi@ep-equipment.eu**
+                    """
+                )
+                st.download_button(
+                    label="⬇️ Download Report ZIP",
+                    data=zip_buffer,
+                    file_name=f"report_{safe_name}_{timestamp}.zip",
+                    mime="application/zip"
+                )
             # Dashboard Summary
             # (your original code)
 
