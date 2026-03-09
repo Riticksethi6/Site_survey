@@ -111,7 +111,7 @@ st.info(
 agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
 
 # ── GENERATE REPORT ───────────────────────────────────────────────────────
-if st.button("Generate Word Report & Recommendations", type="primary", disabled=not agree):
+if st.button("Generate Word Report", type="primary", disabled=not agree):
     required_fields = ["customer_name", "customer_email", "customer_mobile", "application"]
     missing = [field for field in required_fields if not all_data.get(field)]
 
