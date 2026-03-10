@@ -17,11 +17,24 @@ def _build_pallet_block(index: int) -> dict:
     )
 
     other_pallet_type = ""
+    other_pallet_pickable = ""
     if pallet_type == "Other":
         other_pallet_type = st.text_input(
             f"Specify pallet type {index}",
             key=f"other_pallet_type{suffix}"
         )
+
+        other_pallet_pickable = st.radio(
+            f"Can '{other_pallet_type if other_pallet_type else 'this pallet'}' be picked by a normal pallet truck?",
+            ["Yes", "No"],
+            horizontal=True,
+            key=f"other_pallet_pickable{suffix}"
+        )
+
+        if other_pallet_pickable == "No":
+            st.warning(
+                "Please contact our engineering team and confirm the pallet handling requirement before proceeding."
+            )
 
     load_dimensions = st.text_input(
         f"Load Dimensions (L×W×H) [mm] {index}",
@@ -40,6 +53,7 @@ def _build_pallet_block(index: int) -> dict:
     return {
         "pallet_type": pallet_type,
         "other_pallet_type": other_pallet_type,
+        "other_pallet_pickable": other_pallet_pickable,
         "load_dimensions": load_dimensions,
         "pallet_width_mm": pallet_width_mm,
     }
@@ -77,13 +91,20 @@ def build_header_inputs():
         for i in range(2, num_additional + 2):
             pallets.append(_build_pallet_block(i))
 
-   
-    
+    # New yes/no question before Application(s)
+    site_survey_confirmed = st.radio(
+        "Do you want to continue to application selection?",
+        ["Yes", "No"],
+        horizontal=True,
+        key="site_survey_confirmed"
+    )
+
     st.markdown("### Application(s)")
     application = st.multiselect(
         "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
-        key="application"
+        key="application",
+        disabled=(site_survey_confirmed == "No")
     )
 
     task_description = st.text_area(
@@ -116,7 +137,6 @@ def build_header_inputs():
     aisle_width_m = 1.8
     xna_model = None
 
-    # Always first question when any application is selected
     if any(app_name in application for app_name in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
         load_weight_kg = st.number_input(
             "Load Weight [kg]",
@@ -128,8 +148,7 @@ def build_header_inputs():
 
         if pallets and pallets[0]["pallet_type"] == "Euro" and load_weight_kg > 1500:
             st.warning(
-                "Euro pallet cannot bear more than 1500 kg. "
-                "Please select 'Other' and specify the correct pallet type and dimensions."
+                "Euro pallet cannot bear more than 1500 kg. Please select 'Other' and specify the correct pallet type and dimensions."
             )
 
     # Transport / Cross Docking
@@ -304,8 +323,7 @@ def build_header_inputs():
 
         if load_weight_kg <= 1200 and max_stacking_height_m > 4.5:
             st.warning(
-                "For 1200 kg, the standard maximum stacking height is 4.5 m. "
-                "Higher values may require special arrangements."
+                "For 1200 kg, the standard maximum stacking height is 4.5 m. Higher values may require special arrangements."
             )
         elif load_weight_kg > 1200 and max_stacking_height_m > 3.5:
             st.warning("For loads above 1200 kg, maximum stacking height is 3.5 m.")
@@ -367,12 +385,12 @@ def build_header_inputs():
             step=1,
             key="shifts_per_day"
         )
-        temperature_range = st.selectbox(
-        "Temperature Range (°C)",
-        ["Below 0", "1-10", "10-20", "20-30", "30-40"],
-        key="temperature_range"
-    )
 
+        temperature_range = st.selectbox(
+            "Temperature Range (°C)",
+            ["Below 0", "1-10", "10-20", "20-30", "30-40"],
+            key="temperature_range"
+        )
 
     with col_op2:
         hours_per_shift = st.text_input(
@@ -414,7 +432,8 @@ def build_header_inputs():
         "pallet_type": "",
         "other_pallet_type": "",
         "load_dimensions": "",
-        "pallet_width_mm": 0
+        "pallet_width_mm": 0,
+        "other_pallet_pickable": ""
     }
 
     return {
@@ -428,10 +447,12 @@ def build_header_inputs():
         "application": application,
         "task_description": task_description,
         "temperature_range": temperature_range,
+        "site_survey_confirmed": site_survey_confirmed,
 
         "pallets": pallets,
         "pallet_type": primary_pallet["pallet_type"],
         "other_pallet_type": primary_pallet["other_pallet_type"],
+        "other_pallet_pickable": primary_pallet["other_pallet_pickable"],
         "load_dimensions": primary_pallet["load_dimensions"],
         "pallet_width_mm": primary_pallet["pallet_width_mm"],
 
