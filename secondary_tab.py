@@ -15,9 +15,8 @@ FLOW_OPTIONS = [
 
 def build_material_flow_inputs():
     st.subheader("2. Material Flow")
-    placeholder="Describe the operation flow in a simple sequence, for example: Inbound → Buffer Storage → Stacking → Production."
     st.markdown("### Material Flow Sequence")
-
+    placeholder="Describe the operation flow in a simple sequence, for example: Inbound → Buffer Storage → Stacking → Production."
     num_steps = st.number_input(
         "Number of Steps in Material Flow",
         min_value=2,

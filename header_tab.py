@@ -477,10 +477,10 @@ def build_header_inputs():
         key="clearance_height_m"
     )
 
-    st.markdown("### Site Layout / CAD Upload")
+    st.markdown("### Site Layout")
     cad_file = st.file_uploader(
         "Upload CAD file, floor plan, or layout drawing",
-        type=["nwg","dwg", "pdf", "png", "jpg", "jpeg", "zip"],
+        type=["dwg","nwg", "pdf", "png", "jpg", "jpeg", "zip"],
         key="cad_layout_file",
         help="This file will be saved with the report and referenced in the generated document."
     )
