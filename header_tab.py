@@ -1,8 +1,12 @@
 # header_tab.py
 
+import os
 import streamlit as st
 from datetime import datetime
 from product_validators import validate_xpl201, validate_xqe122, validate_xna121_151
+
+WIFI_CHECKLIST_PDF = "4.2_Requiements for the WiFI Checklist.pdf"
+WIFI_TESTING_PDF = "4.3_Wifi_Testing_Procedure.pdf"
 
 
 def _build_pallet_block(index: int) -> dict:
@@ -91,7 +95,6 @@ def build_header_inputs():
         for i in range(2, num_additional + 2):
             pallets.append(_build_pallet_block(i))
 
-    # New yes/no question before Application(s)
     site_survey_confirmed = st.radio(
         "Do you want to continue to application selection?",
         ["Yes", "No"],
@@ -110,12 +113,13 @@ def build_header_inputs():
     task_description = st.text_area(
         "Job-To-Do",
         height=120,
-        key="task_description"
+        key="task_description",
+        placeholder="Example: Inbound → Buffer Storage → Stacking → Production",
+        help="Describe the operation flow in a simple sequence, for example: Inbound → Buffer Storage → Stacking → Production."
     )
 
     st.markdown("### Application-Specific Requirements")
 
-    # Defaults
     load_weight_kg = 1200
     max_stacking_height_m = 3.0
 
@@ -151,7 +155,6 @@ def build_header_inputs():
                 "Euro pallet cannot bear more than 1500 kg. Please select 'Other' and specify the correct pallet type and dimensions."
             )
 
-    # Transport / Cross Docking
     if "Transport / Cross Docking" in application:
         xpl_sub_type = st.radio(
             "Select Application Type",
@@ -167,7 +170,6 @@ def build_header_inputs():
             key="cross_docking_aisle"
         )
 
-    # Stacking / Conveyor
     if "Stacking/Conveyor" in application:
         st.info("Stacking / Conveyor (XQE122): 1200 kg up to 4.5 m, 1500 kg up to 3.5 m")
 
@@ -294,7 +296,6 @@ def build_header_inputs():
             else:
                 st.info("The more the available aisle space, the faster the process.")
 
-    # Narrow Aisle
     if "Narrow Aisle" in application:
         st.info("Narrow Aisle (XNA121 / XNA151): recommended aisle width 1.78–2.0 m")
 
@@ -328,7 +329,6 @@ def build_header_inputs():
         elif load_weight_kg > 1200 and max_stacking_height_m > 3.5:
             st.warning("For loads above 1200 kg, maximum stacking height is 3.5 m.")
 
-    # Validations
     if "Transport / Cross Docking" in application and cross_docking_aisle is not None:
         is_valid, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg)
         if color == "red":
@@ -356,7 +356,6 @@ def build_header_inputs():
         else:
             st.success(msg)
 
-    # Operational Basics
     st.markdown("### Operational Basics")
     col_op1, col_op2 = st.columns(2)
 
@@ -403,14 +402,59 @@ def build_header_inputs():
             "Special Layout Requirements",
             height=100,
             key="special_layout",
-            help="Please mention if aisle widths are different, there are one-way routes, special pickup/drop-off points, or any layout exceptions."
+            help="Please mention if any part of the layout is not correct or unusual, such as platform presence, uneven areas, differences in aisle width, one-way routes, or special pickup/drop-off points."
         )
 
-        network_status = st.text_area(
-            "Site Network Status / WiFi Coverage",
-            height=80,
-            key="network_status"
+        site_wifi_available = st.radio(
+            "Is WiFi available on site?",
+            ["Yes", "No"],
+            horizontal=True,
+            key="site_wifi_available"
         )
+
+        if site_wifi_available == "Yes":
+            st.info(
+                "Please refer to the following documents to check the latency and configuration required by AGVs, and to verify whether the full zone is covered."
+            )
+
+            wifi_col1, wifi_col2 = st.columns(2)
+
+            with wifi_col1:
+                if os.path.exists(WIFI_CHECKLIST_PDF):
+                    with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
+                        st.download_button(
+                            label="Download WiFi Checklist",
+                            data=pdf_file,
+                            file_name=WIFI_CHECKLIST_PDF,
+                            mime="application/pdf",
+                            key="download_wifi_checklist"
+                        )
+
+            with wifi_col2:
+                if os.path.exists(WIFI_TESTING_PDF):
+                    with open(WIFI_TESTING_PDF, "rb") as pdf_file:
+                        st.download_button(
+                            label="Download WiFi Testing Procedure",
+                            data=pdf_file,
+                            file_name=WIFI_TESTING_PDF,
+                            mime="application/pdf",
+                            key="download_wifi_testing_procedure"
+                        )
+
+            network_status = st.text_area(
+                "Site Network Status / WiFi Coverage",
+                height=80,
+                key="network_status",
+                placeholder="Please describe WiFi coverage, latency, configuration status, dead zones, and any network limitations."
+            )
+        else:
+            st.warning("WiFi is not available on site.")
+            network_status = st.text_area(
+                "Site Network Status / WiFi Coverage",
+                height=80,
+                key="network_status",
+                placeholder="Please mention current network status or whether WiFi installation is planned."
+            )
 
     clearance_height_m = st.number_input(
         "Clearance Height Under Platform / Obstacles [m]",
@@ -481,6 +525,7 @@ def build_header_inputs():
         "shifts_per_day": shifts_per_day,
         "peak_hours": hours_per_shift,
         "special_layout": special_layout,
+        "site_wifi_available": site_wifi_available,
         "network_status": network_status,
         "clearance_height_m": clearance_height_m,
 

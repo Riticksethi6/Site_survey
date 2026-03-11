@@ -111,7 +111,7 @@ st.info(
 agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
 
 # ── GENERATE REPORT ───────────────────────────────────────────────────────
-if st.button("Generate Word Report", type="primary", disabled=not agree):
+if st.button("Generate Word Report & Recommendations", type="primary", disabled=not agree):
     required_fields = ["customer_name", "customer_email", "customer_mobile", "application"]
     missing = [field for field in required_fields if not all_data.get(field)]
 
@@ -132,22 +132,26 @@ if st.button("Generate Word Report", type="primary", disabled=not agree):
                     return ""
                 if isinstance(value, bool):
                     return "Yes" if value else "No"
+                if isinstance(value, list):
+                    return ", ".join(str(v) for v in value)
                 return value
 
             for key, value in list(context.items()):
                 context[key] = clean_value(value)
 
             # Primary pallet for template compatibility
-            pallets = context.get("pallets", [])
+            pallets = all_data.get("pallets", [])
             if pallets:
                 primary_pallet = pallets[0]
                 context["pallet_type"] = primary_pallet.get("pallet_type", "")
                 context["other_pallet_type"] = primary_pallet.get("other_pallet_type", "")
+                context["other_pallet_pickable"] = primary_pallet.get("other_pallet_pickable", "")
                 context["load_dimensions"] = primary_pallet.get("load_dimensions", "")
                 context["pallet_width_mm"] = primary_pallet.get("pallet_width_mm", "")
             else:
                 context["pallet_type"] = ""
                 context["other_pallet_type"] = ""
+                context["other_pallet_pickable"] = ""
                 context["load_dimensions"] = ""
                 context["pallet_width_mm"] = ""
 
@@ -158,23 +162,15 @@ if st.button("Generate Word Report", type="primary", disabled=not agree):
             context["cad_filename"] = cad_file.name if cad_file else ""
             context["conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
 
-            inbound_file = material_flow_data.get("inbound_zone_file")
-            outbound_file = material_flow_data.get("outbound_zone_file")
-            storage_zone_file = material_flow_data.get("storage_zone_file")
-            production_zone_file = material_flow_data.get("production_zone_file")
-            staging_zone_file = material_flow_data.get("staging_zone_file")
-            other_zone_file = material_flow_data.get("other_zone_file")
+            # Material flow route summary
+            route_summary = material_flow_data.get("route_summary", "")
+            context["route_summary"] = route_summary
 
-            context["inbound_zone_filename"] = inbound_file.name if inbound_file else ""
-            context["outbound_zone_filename"] = outbound_file.name if outbound_file else ""
-            context["storage_zone_filename"] = storage_zone_file.name if storage_zone_file else ""
-            context["production_zone_filename"] = production_zone_file.name if production_zone_file else ""
-            context["staging_zone_filename"] = staging_zone_file.name if staging_zone_file else ""
-            context["other_zone_filename"] = other_zone_file.name if other_zone_file else ""
-
-            # Readable application text
-            if isinstance(context.get("application"), list):
-                context["application"] = ", ".join(context["application"])
+            # Distances as readable text
+            if isinstance(distances, list) and distances:
+                context["distances"] = ", ".join(str(d) for d in distances)
+            else:
+                context["distances"] = ""
 
             # Readable pallets summary
             if isinstance(pallets, list) and pallets:
@@ -191,28 +187,6 @@ if st.button("Generate Word Report", type="primary", disabled=not agree):
                 context["pallets_summary"] = "\n".join(pallet_lines)
             else:
                 context["pallets_summary"] = ""
-
-            # Readable distances for template
-            if isinstance(distances, list) and distances:
-                context["distances"] = ", ".join(str(d) for d in distances)
-            else:
-                context["distances"] = ""
-
-            # Readable material flow zone summary
-            zone_lines = []
-            if context["inbound_zone_filename"]:
-                zone_lines.append(f"Inbound Zone: {context['inbound_zone_filename']}")
-            if context["outbound_zone_filename"]:
-                zone_lines.append(f"Outbound Zone: {context['outbound_zone_filename']}")
-            if context["storage_zone_filename"]:
-                zone_lines.append(f"Storage Zone: {context['storage_zone_filename']}")
-            if context["production_zone_filename"]:
-                zone_lines.append(f"Production Zone: {context['production_zone_filename']}")
-            if context["staging_zone_filename"]:
-                zone_lines.append(f"Staging / Buffer Zone: {context['staging_zone_filename']}")
-            if context["other_zone_filename"]:
-                zone_lines.append(f"Other Zone: {context['other_zone_filename']}")
-            context["zone_files_summary"] = "\n".join(zone_lines)
 
             status_text.text("Calculating recommendations...")
             progress_bar.progress(25)
@@ -305,39 +279,20 @@ if st.button("Generate Word Report", type="primary", disabled=not agree):
 
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                # Report
                 zip_file.writestr(docx_filename, report_buffer.read())
 
-                # Material flow photos
                 photos = material_flow_data.get("photos", [])
                 for i, photo in enumerate(photos):
                     if photo:
                         ext = photo.name.split(".")[-1] if "." in photo.name else "png"
                         zip_file.writestr(f"material_flow_photo_{i + 1}.{ext}", photo.getbuffer())
 
-                # Conveyor picture
                 if conveyor_picture:
                     ext = conveyor_picture.name.split(".")[-1] if "." in conveyor_picture.name else "png"
                     zip_file.writestr(f"conveyor_picture.{ext}", conveyor_picture.getbuffer())
 
-                # CAD / layout
                 if cad_file:
                     zip_file.writestr(cad_file.name, cad_file.getbuffer())
-
-                # Zone files
-                zone_files = [
-                    ("inbound_zone", inbound_file),
-                    ("outbound_zone", outbound_file),
-                    ("storage_zone", storage_zone_file),
-                    ("production_zone", production_zone_file),
-                    ("staging_zone", staging_zone_file),
-                    ("other_zone", other_zone_file),
-                ]
-
-                for zone_label, zone_file in zone_files:
-                    if zone_file:
-                        ext = zone_file.name.split(".")[-1] if "." in zone_file.name else "png"
-                        zip_file.writestr(f"{zone_label}.{ext}", zone_file.getbuffer())
 
             zip_buffer.seek(0)
 
