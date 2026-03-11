@@ -23,7 +23,7 @@ def build_material_flow_inputs():
         max_value=6,
         value=3,
         step=1,
-        key="num_flow_steps"
+        key="num_flow_steps",
         help="Example flow: Inbound → Buffer Storage → Stacking → Production"
     )
 
