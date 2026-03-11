@@ -36,8 +36,11 @@ def _build_pallet_block(index: int) -> dict:
         )
 
         if other_pallet_pickable == "No":
+            st.error("This project is not possible for temperature below 0°C."),
+            
             st.warning(
-                "Please contact our engineering team and confirm the pallet handling requirement before proceeding."
+                "Please contact our engineering team and confirm the pallet handling requirement before proceeding.",
+            st.stop()
             )
 
     load_dimensions = st.text_input(
@@ -387,7 +390,7 @@ def build_header_inputs():
 
         temperature_range = st.selectbox(
             "Temperature Range (°C)",
-            ["Below 0", "1-10", "10-20", "20-30", "30-40"],
+            ["Below 0°C", "1-10°C", "10-20°C", "20-30°C", "30-40°C"],
             key="temperature_range"
         )
 
