@@ -110,8 +110,14 @@ st.info(
 )
 agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
 
+temperature_blocked = all_data.get("temperature_range") == "Below 0°C"
+
 # ── GENERATE REPORT ───────────────────────────────────────────────────────
-if st.button("Generate Word Report & Recommendations", type="primary", disabled=not agree):
+if st.button(
+    "Generate Report",
+    type="primary",
+    disabled=(not agree or temperature_blocked)
+):
     required_fields = ["customer_name", "customer_email", "customer_mobile", "application"]
     missing = [field for field in required_fields if not all_data.get(field)]
 
@@ -162,17 +168,14 @@ if st.button("Generate Word Report & Recommendations", type="primary", disabled=
             context["cad_filename"] = cad_file.name if cad_file else ""
             context["conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
 
-            # Material flow route summary
-            route_summary = material_flow_data.get("route_summary", "")
-            context["route_summary"] = route_summary
+            # Material flow summary
+            context["route_summary"] = material_flow_data.get("route_summary", "")
 
-            # Distances as readable text
             if isinstance(distances, list) and distances:
                 context["distances"] = ", ".join(str(d) for d in distances)
             else:
                 context["distances"] = ""
 
-            # Readable pallets summary
             if isinstance(pallets, list) and pallets:
                 pallet_lines = []
                 for idx, pallet in enumerate(pallets, start=1):
@@ -252,10 +255,6 @@ if st.button("Generate Word Report & Recommendations", type="primary", disabled=
             context["fleet_recommendation"] = "\n".join(fleet_estimates) if fleet_estimates else ""
             context["validation_summary"] = "\n".join(validation_summary) if validation_summary else "No validation messages"
 
-            workers = site_data.get("whiteboard_workers", 0) + site_data.get("night_workers", 0)
-            labor_savings = workers * shifts * 20000
-            context["roi_hint"] = f"Potential annual labor savings: €{labor_savings:,}"
-
             status_text.text("Generating Word report...")
             progress_bar.progress(50)
 
@@ -279,18 +278,22 @@ if st.button("Generate Word Report & Recommendations", type="primary", disabled=
 
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                # Word report
                 zip_file.writestr(docx_filename, report_buffer.read())
 
+                # Material flow photos
                 photos = material_flow_data.get("photos", [])
                 for i, photo in enumerate(photos):
                     if photo:
                         ext = photo.name.split(".")[-1] if "." in photo.name else "png"
                         zip_file.writestr(f"material_flow_photo_{i + 1}.{ext}", photo.getbuffer())
 
+                # Conveyor picture
                 if conveyor_picture:
                     ext = conveyor_picture.name.split(".")[-1] if "." in conveyor_picture.name else "png"
                     zip_file.writestr(f"conveyor_picture.{ext}", conveyor_picture.getbuffer())
 
+                # CAD / layout file
                 if cad_file:
                     zip_file.writestr(cad_file.name, cad_file.getbuffer())
 
@@ -300,7 +303,7 @@ if st.button("Generate Word Report & Recommendations", type="primary", disabled=
             progress_bar.progress(100)
 
             st.success("Report generated successfully.")
-            st.info("Please download the ZIP file and send it to ritick.sethi@ep-equipment.eu")
+            st.info("The report has been prepared as a ZIP file for download.")
 
             st.download_button(
                 label="Download Report ZIP",
@@ -316,13 +319,11 @@ if st.button("Generate Word Report & Recommendations", type="primary", disabled=
                     "Recommended Products",
                     "Fleet Estimate",
                     "Validation Summary",
-                    "ROI Hint"
                 ],
                 "Value": [
                     context["recommendation"],
                     context["fleet_recommendation"],
                     context["validation_summary"],
-                    context["roi_hint"]
                 ]
             })
 
