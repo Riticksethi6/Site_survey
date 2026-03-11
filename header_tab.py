@@ -480,7 +480,7 @@ def build_header_inputs():
     st.markdown("### Site Layout")
     cad_file = st.file_uploader(
         "Upload CAD file, floor plan, or layout drawing",
-        type=["dwg","nwg", "pdf", "png", "jpg", "jpeg", "zip"],
+        type=["dwg","nwd", "pdf", "png", "jpg", "jpeg", "zip"],
         key="cad_layout_file",
         help="This file will be saved with the report and referenced in the generated document."
     )
