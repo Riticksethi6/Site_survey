@@ -391,6 +391,10 @@ def build_header_inputs():
             key="temperature_range"
         )
 
+        if temperature_range == "Below 0":
+            st.error("This project is not possible for temperature below 0°C.")
+            st.stop()
+
     with col_op2:
         hours_per_shift = st.text_input(
             "Hours per Shift",
