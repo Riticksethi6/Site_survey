@@ -22,6 +22,7 @@ def _build_pallet_block(index: int) -> dict:
 
     other_pallet_type = ""
     other_pallet_pickable = ""
+
     if pallet_type == "Other":
         other_pallet_type = st.text_input(
             f"Specify pallet type {index}",
@@ -35,7 +36,10 @@ def _build_pallet_block(index: int) -> dict:
             key=f"other_pallet_pickable{suffix}"
         )
 
-        
+        if other_pallet_pickable == "No":
+            st.warning(
+                "Please contact our engineering team and confirm the pallet handling requirement before proceeding."
+            )
 
     load_dimensions = st.text_input(
         f"Load Dimensions (L×W×H) [mm] {index}",
@@ -92,23 +96,11 @@ def build_header_inputs():
         for i in range(2, num_additional + 2):
             pallets.append(_build_pallet_block(i))
 
-    site_survey_confirmed = st.radio(
-        "The Pallets can be picked by Traditional Forklifts?",
-        ["Yes", "No"],
-        horizontal=True,
-        key="site_survey_confirmed"
-    )
-    if site_survey_confirmed == "No":
-            st.warning(
-                "Please contact our engineering team and confirm the pallet handling requirement before proceeding."
-            ),
-            st.stop()
-
     st.markdown("### Application(s)")
     application = st.multiselect(
         "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
-        key="application",
+        key="application"
     )
 
     task_description = st.text_area(
@@ -388,11 +380,11 @@ def build_header_inputs():
 
         temperature_range = st.selectbox(
             "Temperature Range (°C)",
-            ["Below 0°C", "1-10°C", "10-20°C", "20-30°C", "30-40°C"],
+            ["Select temperature range", "Below 0°C", "1-10°C", "10-20°C", "20-30°C", "30-40°C"],
             key="temperature_range"
         )
 
-        if temperature_range == "Below 0":
+        if temperature_range == "Below 0°C":
             st.error("This project is not possible for temperature below 0°C.")
             st.stop()
 
@@ -509,7 +501,7 @@ def build_header_inputs():
         "application": application,
         "task_description": task_description,
         "temperature_range": temperature_range,
-        "site_survey_confirmed": site_survey_confirmed,
+        
 
         "pallets": pallets,
         "pallet_type": primary_pallet["pallet_type"],
