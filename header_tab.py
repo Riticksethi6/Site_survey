@@ -35,13 +35,7 @@ def _build_pallet_block(index: int) -> dict:
             key=f"other_pallet_pickable{suffix}"
         )
 
-        if other_pallet_pickable == "No":
-            st.error("This project is not possible for temperature below 0°C."),
-            
-            st.warning(
-                "Please contact our engineering team and confirm the pallet handling requirement before proceeding.",
-            st.stop()
-            )
+        
 
     load_dimensions = st.text_input(
         f"Load Dimensions (L×W×H) [mm] {index}",
@@ -99,18 +93,22 @@ def build_header_inputs():
             pallets.append(_build_pallet_block(i))
 
     site_survey_confirmed = st.radio(
-        "The Pallets can be picked by normal Forklifts?",
+        "The Pallets can be picked by Traditional Forklifts?",
         ["Yes", "No"],
         horizontal=True,
         key="site_survey_confirmed"
     )
+    if site_survey_confirmed == "No":
+            st.warning(
+                "Please contact our engineering team and confirm the pallet handling requirement before proceeding."
+            ),
+            st.stop()
 
     st.markdown("### Application(s)")
     application = st.multiselect(
         "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
         key="application",
-        disabled=(site_survey_confirmed == "No")
     )
 
     task_description = st.text_area(
