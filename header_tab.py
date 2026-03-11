@@ -96,7 +96,7 @@ def build_header_inputs():
             pallets.append(_build_pallet_block(i))
 
     site_survey_confirmed = st.radio(
-        "Do you want to continue to application selection?",
+        "The Pallets can be picked by normal Forklifts?",
         ["Yes", "No"],
         horizontal=True,
         key="site_survey_confirmed"
@@ -480,7 +480,7 @@ def build_header_inputs():
     st.markdown("### Site Layout / CAD Upload")
     cad_file = st.file_uploader(
         "Upload CAD file, floor plan, or layout drawing",
-        type=["dwg", "pdf", "png", "jpg", "jpeg", "zip"],
+        type=["nwg","dwg", "pdf", "png", "jpg", "jpeg", "zip"],
         key="cad_layout_file",
         help="This file will be saved with the report and referenced in the generated document."
     )
