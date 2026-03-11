@@ -24,6 +24,7 @@ def build_material_flow_inputs():
         value=3,
         step=1,
         key="num_flow_steps"
+        help="Example flow: Inbound → Buffer Storage → Stacking → Production"
     )
 
     flow_sequence = []
