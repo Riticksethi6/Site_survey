@@ -447,8 +447,21 @@ def build_header_inputs():
                 key="network_status",
                 placeholder="Please describe WiFi coverage, latency, configuration status, dead zones, and any network limitations."
             )
+
         else:
             st.warning("WiFi is not available on site.")
+            st.info("Please talk to your IT team and share the WiFi checklist.")
+
+            if os.path.exists(WIFI_CHECKLIST_PDF):
+                with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
+                    st.download_button(
+                        label="Download WiFi Checklist",
+                        data=pdf_file,
+                        file_name=WIFI_CHECKLIST_PDF,
+                        mime="application/pdf",
+                        key="download_wifi_checklist_no_wifi"
+                    )
+
             network_status = st.text_area(
                 "Site Network Status / WiFi Coverage",
                 height=80,
