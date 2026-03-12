@@ -1,77 +1,82 @@
-# data_flow_tab.py
+# data_flow_tab.py – Data Flow & Connections
+# Complete version – aligned with your template and form flow
 
 import streamlit as st
 
-
 def build_data_flow_inputs():
-    st.subheader("3. Data Flow & Integration")
+    """
+    Collects data flow, system integration requirements, and connections/interfaces.
+    All fields are mapped to template placeholders.
+    """
+    st.subheader("3. Data Flow & Connections")
 
-    system_integration = st.multiselect(
-        "System Integration",
-        [
-            "Fire Door",
-            "Fire Alarm",
-            "Conveyor",
-            "Automatic Doors",
-            "Production Units",
-            "Elevators",
-            "Dock Doors",
-            "Other",
-        ],
-        key="system_integration"
+    # Main integration requirements
+    integration_req = st.text_area(
+        "System Integration / Data Flow Requirements",
+        height=160,
+        placeholder="Describe any required integration with WMS, ERP, MES, conveyor controls, "
+                    "data formats, protocols (e.g. REST, MQTT, OPC UA), real-time vs batch, etc.",
+        key="integration_req"
     )
 
-    integration_to_your_system_required = st.radio(
-        "Integration to your system required?",
-        ["Yes", "No"],
-        horizontal=True,
-        key="integration_to_your_system_required"
-    )
-
-    systems_to_integrate = []
-    if integration_to_your_system_required == "Yes":
-        systems_to_integrate = st.multiselect(
-            "What all systems need to be integrated?",
-            [
-                "ERP",
-                "WMS",
-                "Fleet Manager",
-                "PLCs for Production",
-                "PLCs for Conveyors",
-            ],
-            key="systems_to_integrate"
-        )
-
-    connections = st.text_input(
-        "Other Connections / Interfaces",
-        placeholder="Example: scanners, lifts, dock systems, barcode systems",
-        key="connections"
-    )
-
-    connections_details = st.text_area(
-        "Connection / Interface Details",
-        height=120,
-        placeholder="Describe what data needs to be exchanged and with which systems.",
-        key="connections_details"
-    )
-
+    # Detailed data flow description
     data_flow_text = st.text_area(
-        "Data Flow Description",
-        height=140,
-        placeholder="Describe how orders, tasks, confirmations, alarms, and status updates should flow between systems.",
+        "Data Flow & System Integration (WMS, API, ERP, etc.)",
+        height=160,
+        placeholder="Detail the expected data flow:\n"
+                    "- What triggers the tasks?\n"
+                    "- Which WMS play major role Customer/EP?\n"
+                    "- API needed to connect Customer's WMS?\n"
+                    "- Any required handshakes with conveyors, palletizers, etc.?\n"
+                    "- Fleet management / traffic control integration?",
         key="data_flow_text"
     )
 
-    system_integration_summary = ", ".join(system_integration) if system_integration else ""
-    systems_to_integrate_summary = ", ".join(systems_to_integrate) if systems_to_integrate else ""
+    # Connections / Interfaces multiselect
+    connections = st.multiselect(
+        "Connections / Interfaces to Other Equipment",
+        options=[
+            "Fire Alarm System",
+            "Automatic Doors / Gates",
+            "Conveyors / Roller Tables",
+            "Palletizers / Depalletizers",
+            "Elevators / Vertical Conveyors",
+            "Production Machines / Lines",
+            "WMS / ERP / MES",
+            "Traffic Lights / Signals",
+            "Barcode / RFID Readers",
+            "Other"
+        ],
+        default=[],
+        key="connections"
+    )
+
+    # Details field – enabled only if connections are selected
+    connections_details = st.text_area(
+        "Details on Connections / Interfaces",
+        height=120,
+        placeholder="Provide details for each selected connection:\n"
+                    "- Interface type (digital I/O, Ethernet/IP, Profinet, REST API, etc.)\n"
+                    "- Required signals / data exchange\n"
+                    "- Handshake protocol\n"
+                    "- Safety-related interlocks (e.g. emergency stop propagation)",
+        disabled=not connections,
+        key="connections_details"
+    )
+
+    # Optional: Any additional notes
+    additional_notes = st.text_area(
+        "Additional Notes / Special Requirements (optional)",
+        height=80,
+        placeholder="E.g. real-time requirements, latency limits, fallback behavior, "
+                    "cybersecurity constraints, preferred communication standards, etc.",
+        key="data_flow_additional_notes"
+    )
 
     return {
-        "system_integration": system_integration,
-        "system_integration_summary": system_integration_summary,
-        "integration_to_your_system_required": integration_to_your_system_required,
-        "systems_to_integrate": systems_to_integrate,
-        "systems_to_integrate_summary": systems_to_integrate_summary,
+        "integration_req": integration_req.strip(),
+        "data_flow_text": data_flow_text.strip(),
         "connections": connections,
-        "connections_details": connections_details,
-        "data_flow_text": data_flow_text,
+        "connections_details": connections_details.strip(),
+        "data_flow_additional_notes": additional_notes.strip()  # optional extra field
     }

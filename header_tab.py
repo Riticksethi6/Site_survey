@@ -1,12 +1,8 @@
 # header_tab.py
 
-import os
 import streamlit as st
 from datetime import datetime
 from product_validators import validate_xpl201, validate_xqe122, validate_xna121_151
-
-WIFI_CHECKLIST_PDF = "4.2_Requiements for the WiFI Checklist.pdf"
-WIFI_TESTING_PDF = "4.3_Wifi_Testing_Procedure.pdf"
 
 
 def _build_pallet_block(index: int) -> dict:
@@ -22,7 +18,6 @@ def _build_pallet_block(index: int) -> dict:
 
     other_pallet_type = ""
     other_pallet_pickable = ""
-
     if pallet_type == "Other":
         other_pallet_type = st.text_input(
             f"Specify pallet type {index}",
@@ -81,7 +76,8 @@ def build_header_inputs():
 
     add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
 
-    pallets = [_build_pallet_block(1)]
+    pallets = []
+    pallets.append(_build_pallet_block(1))
 
     if add_multiple_pallets:
         num_additional = st.number_input(
@@ -95,19 +91,26 @@ def build_header_inputs():
         for i in range(2, num_additional + 2):
             pallets.append(_build_pallet_block(i))
 
+    # New yes/no question before Application(s)
+    site_survey_confirmed = st.radio(
+        "Do you want to continue to application selection?",
+        ["Yes", "No"],
+        horizontal=True,
+        key="site_survey_confirmed"
+    )
+
     st.markdown("### Application(s)")
     application = st.multiselect(
         "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
-        key="application"
+        key="application",
+        disabled=(site_survey_confirmed == "No")
     )
 
     task_description = st.text_area(
         "Job-To-Do",
         height=120,
-        key="task_description",
-        placeholder="Example: Inbound → Buffer Storage → Stacking → Production",
-        help="Describe the operation flow in a simple sequence, for example: Inbound → Buffer Storage → Stacking → Production."
+        key="task_description"
     )
 
     st.markdown("### Application-Specific Requirements")
@@ -134,7 +137,6 @@ def build_header_inputs():
     aisle_width_m = 1.8
     xna_model = None
 
-    # Load weight first when any application is selected
     if any(app_name in application for app_name in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
         load_weight_kg = st.number_input(
             "Load Weight [kg]",
@@ -180,6 +182,17 @@ def build_header_inputs():
                 "Specify Other Pickup Type",
                 key="pickup_type_other"
             )
+
+        if pickup_type == "Ground":
+            box_distance_mm = st.number_input(
+                "Distance Between 2 Pallets [mm]",
+                min_value=0,
+                value=200,
+                step=1,
+                key="ground_box_distance_mm"
+            )
+            if box_distance_mm < 200:
+                st.error("Minimum distance between pallets on ground is 200 mm. Less than this is not accepted.")
 
         elif pickup_type == "Conveyor":
             conveyor_height = st.number_input(
@@ -230,15 +243,16 @@ def build_header_inputs():
                 key="storage_layout"
             )
 
-            box_distance_mm = st.number_input(
+            floor_distance = st.number_input(
                 "Distance Between 2 Pallets [mm]",
                 min_value=0,
                 value=200,
                 step=1,
                 key="floor_box_distance_mm"
             )
+            box_distance_mm = floor_distance
 
-            if box_distance_mm < 200:
+            if floor_distance < 200:
                 st.error("Minimum distance between 2 pallets for floor stacking is 200 mm. Less than this is not accepted.")
 
             aisle_width_mm = st.number_input(
@@ -255,15 +269,16 @@ def build_header_inputs():
                 st.info("The more the available aisle space, the faster and smoother the process.")
 
         elif stacking_type == "Rack Stacking":
-            box_distance_mm = st.number_input(
+            rack_distance = st.number_input(
                 "Distance Between Pallets Stacked in Racks [mm]",
                 min_value=0,
                 value=75,
                 step=1,
                 key="rack_box_distance_mm"
             )
+            box_distance_mm = rack_distance
 
-            if box_distance_mm < 75:
+            if rack_distance < 75:
                 st.error("Minimum distance between pallets stacked in racks is 75 mm. Less than this is not accepted.")
 
             aisle_width_mm = st.number_input(
@@ -373,13 +388,9 @@ def build_header_inputs():
 
         temperature_range = st.selectbox(
             "Temperature Range (°C)",
-            ["Select temperature range", "Below 0°C", "1-10°C", "10-20°C", "20-30°C", "30-40°C"],
+            ["Below 0", "1-10", "10-20", "20-30", "30-40"],
             key="temperature_range"
         )
-
-        if temperature_range == "Below 0°C":
-            st.error("This project is not possible for temperature below 0°C.")
-            st.stop()
 
     with col_op2:
         hours_per_shift = st.text_input(
@@ -392,72 +403,14 @@ def build_header_inputs():
             "Special Layout Requirements",
             height=100,
             key="special_layout",
-            help="Please mention if any part of the layout is not correct or unusual, such as platform presence, uneven areas, differences in aisle width, one-way routes, or special pickup/drop-off points."
+            help="Please mention if aisle widths are different, there are one-way routes, special pickup/drop-off points, or any layout exceptions."
         )
 
-        site_wifi_available = st.radio(
-            "Is WiFi available on site?",
-            ["Yes", "No"],
-            horizontal=True,
-            key="site_wifi_available"
+        network_status = st.text_area(
+            "Site Network Status / WiFi Coverage",
+            height=80,
+            key="network_status"
         )
-
-        if site_wifi_available == "Yes":
-            st.info(
-                "Please refer to the following documents to check the latency and configuration required by AGVs, and to verify whether the full zone is covered."
-            )
-
-            wifi_col1, wifi_col2 = st.columns(2)
-
-            with wifi_col1:
-                if os.path.exists(WIFI_CHECKLIST_PDF):
-                    with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
-                        st.download_button(
-                            label="Download WiFi Checklist",
-                            data=pdf_file,
-                            file_name=WIFI_CHECKLIST_PDF,
-                            mime="application/pdf",
-                            key="download_wifi_checklist"
-                        )
-
-            with wifi_col2:
-                if os.path.exists(WIFI_TESTING_PDF):
-                    with open(WIFI_TESTING_PDF, "rb") as pdf_file:
-                        st.download_button(
-                            label="Download WiFi Testing Procedure",
-                            data=pdf_file,
-                            file_name=WIFI_TESTING_PDF,
-                            mime="application/pdf",
-                            key="download_wifi_testing_procedure"
-                        )
-
-            network_status = st.text_area(
-                "Site Network Status / WiFi Coverage",
-                height=80,
-                key="network_status",
-                placeholder="Please describe WiFi coverage, latency, configuration status, dead zones, and any network limitations."
-            )
-
-        else:
-            st.warning("WiFi is not available on site.")
-            st.info("Please talk to your IT team and share the WiFi checklist.")
-
-            if os.path.exists(WIFI_CHECKLIST_PDF):
-                with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
-                    st.download_button(
-                        label="Download WiFi Checklist",
-                        data=pdf_file,
-                        file_name=WIFI_CHECKLIST_PDF,
-                        mime="application/pdf",
-                        key="download_wifi_checklist_no_wifi"
-                    )
-
-            network_status = st.text_area(
-                "Site Network Status / WiFi Coverage",
-                height=80,
-                key="network_status",
-                placeholder="Please mention current network status or whether WiFi installation is planned."
-            )
 
     clearance_height_m = st.number_input(
         "Clearance Height Under Platform / Obstacles [m]",
@@ -467,10 +420,10 @@ def build_header_inputs():
         key="clearance_height_m"
     )
 
-    st.markdown("### Site Layout")
+    st.markdown("### Site Layout / CAD Upload")
     cad_file = st.file_uploader(
         "Upload CAD file, floor plan, or layout drawing",
-        type=["dwg", "nwd", "pdf", "png", "jpg", "jpeg", "zip"],
+        type=["dwg", "pdf", "png", "jpg", "jpeg", "zip"],
         key="cad_layout_file",
         help="This file will be saved with the report and referenced in the generated document."
     )
@@ -494,6 +447,7 @@ def build_header_inputs():
         "application": application,
         "task_description": task_description,
         "temperature_range": temperature_range,
+        "site_survey_confirmed": site_survey_confirmed,
 
         "pallets": pallets,
         "pallet_type": primary_pallet["pallet_type"],
@@ -527,7 +481,6 @@ def build_header_inputs():
         "shifts_per_day": shifts_per_day,
         "peak_hours": hours_per_shift,
         "special_layout": special_layout,
-        "site_wifi_available": site_wifi_available,
         "network_status": network_status,
         "clearance_height_m": clearance_height_m,
 
