@@ -87,8 +87,7 @@ def clean_value(value):
     if isinstance(value, bool):
         return "Yes" if value else "No"
     if isinstance(value, list):
-        cleaned = [str(v) for v in value if str(v).strip()]
-        return ", ".join(cleaned)
+        return ", ".join(str(v) for v in value if str(v).strip())
     return value
 
 
@@ -118,9 +117,11 @@ if "feedback_popup_open" not in st.session_state:
     st.session_state["feedback_popup_open"] = False
 
 col_logo, col_title = st.columns([1, 5])
+
 with col_logo:
     if os.path.exists(LOGO_PATH):
         st.image(LOGO_PATH, width=220)
+
 with col_title:
     st.title("EP Equipment – Site Survey Dashboard")
 
@@ -136,40 +137,62 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     from header_tab import build_header_inputs
     header_data = build_header_inputs()
+
 with tab2:
     from secondary_tab import build_material_flow_inputs
     material_flow_data = build_material_flow_inputs()
+
 with tab3:
     from data_flow_tab import build_data_flow_inputs
     data_flow_data = build_data_flow_inputs()
+
 with tab4:
     from site_conditions_tab import build_site_conditions_inputs
     site_data = build_site_conditions_inputs()
 
-all_data = {**header_data, **material_flow_data, **data_flow_data, **site_data}
+all_data = {
+    **header_data,
+    **material_flow_data,
+    **data_flow_data,
+    **site_data,
+}
+
 selected_apps = all_data.get("application", [])
 distances = material_flow_data.get("distances", [])
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
-all_data["boxes_stacked"] = all_data.get("stacking_level", "")
 
 st.header("Reference – Layout Specifications")
+
 col_pdf1, col_pdf2 = st.columns(2)
+
 with col_pdf1:
     st.subheader("XQE – Stacking AMR Layout Planning")
     if os.path.exists(XQE_PDF):
         with open(XQE_PDF, "rb") as pdf_file:
-            st.download_button("Download Full XQE PDF", pdf_file, XQE_PDF, "application/pdf")
+            st.download_button(
+                label="Download Full XQE PDF",
+                data=pdf_file,
+                file_name=XQE_PDF,
+                mime="application/pdf"
+            )
+
 with col_pdf2:
     st.subheader("XPL – Pallet Mover Layout Planning")
     if os.path.exists(XPL_PDF):
         with open(XPL_PDF, "rb") as pdf_file:
-            st.download_button("Download Full XPL PDF", pdf_file, XPL_PDF, "application/pdf")
+            st.download_button(
+                label="Download Full XPL PDF",
+                data=pdf_file,
+                file_name=XPL_PDF,
+                mime="application/pdf"
+            )
 
 st.markdown("### Generate Report")
 st.info(
     "By generating the report, you agree that if any changes are required in the layout, "
     "the final solution must follow the standard requirement."
 )
+
 agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
 temperature_blocked = all_data.get("temperature_range") == "Below 0°C"
 
@@ -182,6 +205,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
     else:
         progress_bar = st.progress(0)
         status_text = st.empty()
+
         try:
             status_text.text("Preparing report data...")
             progress_bar.progress(10)
@@ -206,9 +230,13 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             cad_file = all_data.get("cad_file")
             conveyor_picture = all_data.get("conveyor_picture")
             photos = material_flow_data.get("photos", [])
+
             context["cad_filename"] = cad_file.name if cad_file else ""
             context["conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
             context["job_to_do"] = material_flow_data.get("job_to_do_flow", all_data.get("task_description", ""))
+
+            if not all_data.get("clearance_required"):
+                context["clearance_height_m"] = ""
 
             aisle_lines = []
             if "Transport / Cross Docking" in selected_apps and all_data.get("cross_docking_aisle"):
@@ -220,11 +248,13 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             context["aisle_width_text"] = "\n".join(aisle_lines)
 
             application_lines = []
+
             if "Transport / Cross Docking" in selected_apps:
                 application_lines.append("Transport / Cross Docking:")
                 if all_data.get("xpl_sub_type"):
                     application_lines.append(f"Application Type: {all_data.get('xpl_sub_type')}")
                 application_lines.append("")
+
             if "Stacking/Conveyor" in selected_apps:
                 application_lines.append("Stacking / Conveyor:")
                 if all_data.get("pickup_type"):
@@ -248,6 +278,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                 if all_data.get("distance_from_edge"):
                     application_lines.append(f"Distance from conveyor edge to pallet: {all_data.get('distance_from_edge')} mm")
                 application_lines.append("")
+
             if "Narrow Aisle" in selected_apps:
                 application_lines.append("Narrow Aisle:")
                 if all_data.get("aisle_width_m"):
@@ -255,8 +286,8 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                 if all_data.get("xna_model"):
                     application_lines.append(f"Preferred Model: {all_data.get('xna_model')}")
                 application_lines.append("")
-            context["application_specific_text"] = "\n".join([line for line in application_lines if line is not None]).strip()
 
+            context["application_specific_text"] = "\n".join([line for line in application_lines if line is not None]).strip()
             context["transport_distance_text"] = material_flow_data.get("flow_pairs_text", "")
             context["material_step_details_text"] = material_flow_data.get("step_details_text", "")
             context["special_comments"] = all_data.get("special_comments", "")
@@ -281,9 +312,13 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             status_text.text("Calculating recommendations...")
             progress_bar.progress(25)
+
             from product_validators import validate_xpl201, validate_xqe122, validate_xna121_151
 
-            recommendations, fleet_estimates, validation_summary = [], [], []
+            recommendations = []
+            fleet_estimates = []
+            validation_summary = []
+
             pallets_hr = all_data.get("pallets_per_hour", 0)
             avg_dist = all_data.get("avg_transport_m", 0)
 
@@ -300,7 +335,11 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     fleet_estimates.append(f"XPL201: ~{fleet_size} vehicles")
 
             if "Stacking/Conveyor" in selected_apps and all_data.get("load_weight_kg") and all_data.get("max_stacking_height_m"):
-                is_valid, msg, color = validate_xqe122(all_data.get("load_weight_kg", 0), all_data.get("max_stacking_height_m", 0), 320)
+                is_valid, msg, color = validate_xqe122(
+                    all_data.get("load_weight_kg", 0),
+                    all_data.get("max_stacking_height_m", 0),
+                    320
+                )
                 validation_summary.append(f"XQE122: {msg} ({color})")
                 if is_valid or color == "orange":
                     speed = 1.0
@@ -311,7 +350,12 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             if "Narrow Aisle" in selected_apps and all_data.get("aisle_width_m") and all_data.get("xna_model"):
                 model = all_data.get("xna_model", "XNA121 (up to 8.5m)")
-                is_valid, msg, color = validate_xna121_151(all_data.get("aisle_width_m", 0), all_data.get("load_weight_kg", 0), all_data.get("max_stacking_height_m", 0), model)
+                is_valid, msg, color = validate_xna121_151(
+                    all_data.get("aisle_width_m", 0),
+                    all_data.get("load_weight_kg", 0),
+                    all_data.get("max_stacking_height_m", 0),
+                    model
+                )
                 validation_summary.append(f"{model}: {msg} ({color})")
                 if is_valid or color == "orange":
                     speed = 1.0
@@ -326,10 +370,13 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             status_text.text("Generating Word report...")
             progress_bar.progress(50)
+
             if not os.path.exists(TEMPLATE_PATH):
                 raise FileNotFoundError(f"Template file not found: {TEMPLATE_PATH}")
+
             doc = DocxTemplate(TEMPLATE_PATH)
             doc.render(context)
+
             report_buffer = BytesIO()
             doc.save(report_buffer)
             report_buffer.seek(0)
@@ -351,13 +398,23 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             status_text.text("Report ready.")
             progress_bar.progress(100)
+
             st.success("Report generated successfully.")
 
             st.subheader("Dashboard Summary")
             st.table({
-                "Key Metric": ["Recommended Products", "Fleet Estimate", "Validation Summary"],
-                "Value": [context["recommendation"], context["fleet_recommendation"], context["validation_summary"]],
+                "Key Metric": [
+                    "Recommended Products",
+                    "Fleet Estimate",
+                    "Validation Summary",
+                ],
+                "Value": [
+                    context["recommendation"],
+                    context["fleet_recommendation"],
+                    context["validation_summary"],
+                ]
             })
+
         except Exception as e:
             progress_bar.progress(0)
             status_text.text("Failed.")
@@ -383,19 +440,24 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
     with zipfile.ZipFile(final_zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         if report_bytes:
             zip_file.writestr(docx_filename, report_bytes)
+
         for i, photo in enumerate(photos):
             if photo:
                 ext = photo.name.split(".")[-1] if "." in photo.name else "png"
                 zip_file.writestr(f"material_flow_photo_{i + 1}.{ext}", photo.getbuffer())
+
         if conveyor_picture:
             ext = conveyor_picture.name.split(".")[-1] if "." in conveyor_picture.name else "png"
             zip_file.writestr(f"conveyor_picture.{ext}", conveyor_picture.getbuffer())
+
         if cad_file:
             zip_file.writestr(cad_file.name, cad_file.getbuffer())
+
         if feedback_data:
             zip_file.writestr("feedback.txt", build_feedback_text(feedback_data))
 
     final_zip_buffer.seek(0)
+
     if feedback_data:
         st.success("Feedback saved. Download the final ZIP below.")
     else:
@@ -406,5 +468,5 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
         data=final_zip_buffer,
         file_name=zip_filename,
         mime="application/zip",
-        key="download_final_zip",
+        key="download_final_zip"
     )
