@@ -13,10 +13,52 @@ LOGO_PATH = "Picture2.png"
 XQE_PDF = "1.10_XQE_Layout_planning_Specification.pdf"
 XPL_PDF = "1.9_XPL_Layout_Planning_Specification.pdf"
 
+
+def build_feedback_text(feedback_data: dict) -> str:
+    return f"""EP Equipment Site Survey Feedback
+
+Overall experience: {feedback_data.get('experience', '')}
+Were any important questions missing?: {feedback_data.get('missing_questions', '')}
+What should we improve?: {feedback_data.get('improvements', '')}
+Would you like EP team to contact you?: {feedback_data.get('contact_needed', '')}
+Additional comments: {feedback_data.get('comments', '')}
+"""
+
+
 st.set_page_config(page_title="EP Equipment – Site Survey Dashboard", layout="wide")
+
+# ── SESSION STATE DEFAULTS ────────────────────────────────────────────────
+if "report_ready" not in st.session_state:
+    st.session_state["report_ready"] = False
+
+if "generated_report_buffer" not in st.session_state:
+    st.session_state["generated_report_buffer"] = None
+
+if "generated_safe_name" not in st.session_state:
+    st.session_state["generated_safe_name"] = "customer"
+
+if "generated_timestamp" not in st.session_state:
+    st.session_state["generated_timestamp"] = ""
+
+if "generated_cad_file" not in st.session_state:
+    st.session_state["generated_cad_file"] = None
+
+if "generated_conveyor_picture" not in st.session_state:
+    st.session_state["generated_conveyor_picture"] = None
+
+if "generated_photos" not in st.session_state:
+    st.session_state["generated_photos"] = []
+
+if "generated_feedback" not in st.session_state:
+    st.session_state["generated_feedback"] = None
+
+if "feedback_saved" not in st.session_state:
+    st.session_state["feedback_saved"] = False
+
 
 # ── HEADER ────────────────────────────────────────────────────────────────
 col_logo, col_title = st.columns([1, 5])
+
 with col_logo:
     if os.path.exists(LOGO_PATH):
         st.image(LOGO_PATH, width=220)
@@ -108,8 +150,8 @@ st.info(
     "By generating the report, you agree that if any changes are required in the layout, "
     "the final solution must follow the standard requirement."
 )
-agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
 
+agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
 temperature_blocked = all_data.get("temperature_range") == "Below 0°C"
 
 # ── GENERATE REPORT ───────────────────────────────────────────────────────
@@ -176,6 +218,7 @@ if st.button(
             else:
                 context["distances"] = ""
 
+            # Pallet summary
             if isinstance(pallets, list) and pallets:
                 pallet_lines = []
                 for idx, pallet in enumerate(pallets, start=1):
@@ -202,7 +245,6 @@ if st.button(
 
             pallets_hr = all_data.get("pallets_per_hour", 0)
             avg_dist = all_data.get("avg_transport_m", 0)
-            shifts = all_data.get("shifts_per_day", 1)
 
             if "Transport / Cross Docking" in selected_apps:
                 aisle = all_data.get("cross_docking_aisle", 1.8)
@@ -270,48 +312,23 @@ if st.button(
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_name = all_data.get("customer_name", "customer").strip().replace(" ", "_").lower()
-            docx_filename = f"site_survey_{safe_name}_{timestamp}.docx"
-            zip_filename = f"site_survey_{safe_name}_{timestamp}.zip"
 
-            status_text.text("Preparing ZIP package...")
-            progress_bar.progress(75)
+            # Save in session state for feedback + final ZIP
+            st.session_state["generated_report_buffer"] = report_buffer.getvalue()
+            st.session_state["generated_cad_file"] = cad_file
+            st.session_state["generated_conveyor_picture"] = conveyor_picture
+            st.session_state["generated_photos"] = material_flow_data.get("photos", [])
+            st.session_state["generated_safe_name"] = safe_name
+            st.session_state["generated_timestamp"] = timestamp
+            st.session_state["generated_feedback"] = None
+            st.session_state["feedback_saved"] = False
+            st.session_state["report_ready"] = True
 
-            zip_buffer = BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                # Word report
-                zip_file.writestr(docx_filename, report_buffer.read())
-
-                # Material flow photos
-                photos = material_flow_data.get("photos", [])
-                for i, photo in enumerate(photos):
-                    if photo:
-                        ext = photo.name.split(".")[-1] if "." in photo.name else "png"
-                        zip_file.writestr(f"material_flow_photo_{i + 1}.{ext}", photo.getbuffer())
-
-                # Conveyor picture
-                if conveyor_picture:
-                    ext = conveyor_picture.name.split(".")[-1] if "." in conveyor_picture.name else "png"
-                    zip_file.writestr(f"conveyor_picture.{ext}", conveyor_picture.getbuffer())
-
-                # CAD / layout file
-                if cad_file:
-                    zip_file.writestr(cad_file.name, cad_file.getbuffer())
-
-            zip_buffer.seek(0)
-
-            status_text.text("Done.")
+            status_text.text("Report ready.")
             progress_bar.progress(100)
 
             st.success("Report generated successfully.")
-            st.info("The report has been prepared as a ZIP file for download.")
-
-            st.download_button(
-                label="Download Report ZIP",
-                data=zip_buffer,
-                file_name=zip_filename,
-                mime="application/zip",
-                key="download_report_zip"
-            )
+            st.info("Please submit feedback below, then download the final ZIP.")
 
             st.subheader("Dashboard Summary")
             st.table({
@@ -331,3 +348,91 @@ if st.button(
             progress_bar.progress(0)
             status_text.text("Failed.")
             st.error(f"Error during report generation: {str(e)}")
+
+# ── FEEDBACK FORM ─────────────────────────────────────────────────────────
+if st.session_state.get("report_ready"):
+    st.markdown("### Help us improve")
+    st.info("Please share quick feedback before downloading the final ZIP.")
+
+    with st.form("feedback_form"):
+        experience = st.selectbox(
+            "Overall experience",
+            ["Excellent", "Good", "Average", "Poor"]
+        )
+
+        missing_questions = st.text_area(
+            "Were any important questions missing?",
+            placeholder="Write any missing question or information that should be added."
+        )
+
+        improvements = st.text_area(
+            "What should we improve?",
+            placeholder="Tell us what can be improved in the interface or report."
+        )
+
+        contact_needed = st.radio(
+            "Would you like EP team to contact you?",
+            ["No", "Yes"],
+            horizontal=True
+        )
+
+        comments = st.text_area(
+            "Additional comments",
+            placeholder="Any extra comments"
+        )
+
+        feedback_submitted = st.form_submit_button("Submit Feedback")
+
+    if feedback_submitted:
+        st.session_state["generated_feedback"] = {
+            "experience": experience,
+            "missing_questions": missing_questions,
+            "improvements": improvements,
+            "contact_needed": contact_needed,
+            "comments": comments,
+        }
+        st.session_state["feedback_saved"] = True
+        st.success("Feedback saved. Please download the final ZIP below.")
+
+    # Final ZIP appears only after feedback submit
+    if st.session_state.get("feedback_saved"):
+        report_bytes = st.session_state.get("generated_report_buffer")
+        cad_file = st.session_state.get("generated_cad_file")
+        conveyor_picture = st.session_state.get("generated_conveyor_picture")
+        photos = st.session_state.get("generated_photos", [])
+        safe_name = st.session_state.get("generated_safe_name", "customer")
+        timestamp = st.session_state.get("generated_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
+        feedback_data = st.session_state.get("generated_feedback")
+
+        final_zip_buffer = BytesIO()
+        docx_filename = f"site_survey_{safe_name}_{timestamp}.docx"
+        zip_filename = f"site_survey_{safe_name}_{timestamp}.zip"
+
+        with zipfile.ZipFile(final_zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            if report_bytes:
+                zip_file.writestr(docx_filename, report_bytes)
+
+            for i, photo in enumerate(photos):
+                if photo:
+                    ext = photo.name.split(".")[-1] if "." in photo.name else "png"
+                    zip_file.writestr(f"material_flow_photo_{i + 1}.{ext}", photo.getbuffer())
+
+            if conveyor_picture:
+                ext = conveyor_picture.name.split(".")[-1] if "." in conveyor_picture.name else "png"
+                zip_file.writestr(f"conveyor_picture.{ext}", conveyor_picture.getbuffer())
+
+            if cad_file:
+                zip_file.writestr(cad_file.name, cad_file.getbuffer())
+
+            if feedback_data:
+                zip_file.writestr("feedback.txt", build_feedback_text(feedback_data))
+
+        final_zip_buffer.seek(0)
+
+        st.download_button(
+            label="Download Final ZIP",
+            data=final_zip_buffer,
+            file_name=zip_filename,
+            mime="application/zip",
+            key="download_final_zip"
+        )
