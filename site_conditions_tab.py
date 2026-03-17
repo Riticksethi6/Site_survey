@@ -62,23 +62,6 @@ def build_site_conditions_inputs():
         key="network_coverage"
     )
 
-
-    ground_gaps_mm = st.number_input(
-        "Ground Gaps / Depressions [mm]",
-        min_value=0.0,
-        value=0.0,
-        step=1.0,
-        help="Enter the maximum floor gap, joint, depression, or uneven section that may affect AMR movement.",
-        key="ground_gaps_mm"
-    )
-
-    special_demand = st.text_area(
-        "Special Demand / Customization Details",
-        height=100,
-        placeholder="e.g. explosion-proof requirement, low/high temperature needs, remote monitoring, semi-/fully automatic operation, custom appearance/logo, or other special demands.",
-        key="special_demand"
-    )
-
     # Return all fields – charging_stations reused from charging_status for template compatibility
     return {
         "other_agvs": other_agvs,
@@ -88,7 +71,5 @@ def build_site_conditions_inputs():
         "charging_status": charging_status,
         "battery_heating": battery_heating,
         "network_coverage": network_coverage,
-        "charging_stations": charging_status,  # reused for template
-        "ground_gaps_mm": ground_gaps_mm,
-        "special_demand": special_demand,
+        "charging_stations": charging_status  # reused for template
     }

@@ -83,8 +83,8 @@ def build_header_inputs():
 
     with col1:
         customer_name = st.text_input("Customer Name *", key="customer_name")
-        customer_email = st.text_input("Customer Email ", key="customer_email")
-        customer_mobile = st.text_input("Customer Mobile Number ", key="customer_mobile")
+        customer_email = st.text_input("Customer Email *", key="customer_email")
+        customer_mobile = st.text_input("Customer Mobile Number *", key="customer_mobile")
         project_name = st.text_input("Project Name", key="project_name")
         project_location = st.text_input("Project Location", key="project_location")
         warehouse_area = st.text_input("Warehouse / Workshop Area [sq m]", key="warehouse_area")
@@ -116,7 +116,7 @@ def build_header_inputs():
         "pallet_width_mm": 0,
     }
 
-    st.markdown("### Application(s)*")
+    st.markdown("### Application(s)")
     application = st.multiselect(
         "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
@@ -145,13 +145,13 @@ def build_header_inputs():
     stacking_type = None
     stacking_type_other = ""
     storage_layout = ""
-    storage_locations = ""
     box_distance_mm = 0
     aisle_width_mm = 0
     conveyor_height = 0
     conveyor_picture = None
     load_at_edge = ""
     distance_from_edge = 0
+    storage_locations = ""
 
     aisle_width_m = 0.0
     xna_model = None
@@ -250,7 +250,7 @@ def build_header_inputs():
             )
 
             storage_locations = st.text_area(
-                "Number and Size of Storage Locations",
+                "Storage Locations / Lane Details",
                 height=80,
                 key="storage_locations"
             )
@@ -280,6 +280,12 @@ def build_header_inputs():
                 st.info("The more the available aisle space, the faster and smoother the process.")
 
         elif stacking_type == "Rack Stacking":
+            storage_locations = st.text_area(
+                "Storage Locations / Rack Details",
+                height=80,
+                key="storage_locations"
+            )
+
             box_distance_mm = st.number_input(
                 "Distance Between Pallets Stacked in Racks [mm]",
                 min_value=0,
@@ -384,21 +390,10 @@ def build_header_inputs():
     col_op1, col_op2 = st.columns(2)
 
     with col_op1:
-        pallets_per_hour = st.number_input(
-            "Pallets per Hour",
-            min_value=0,
-            value=0,
-            step=1,
-            key="pallets_per_hour"
-        )
+        st.info("Pallets per hour and pallets per day are calculated automatically from the process capacities entered in Material Flow.")
 
-        pallets_per_day = st.number_input(
-            "Pallets per Day",
-            min_value=0,
-            value=0,
-            step=1,
-            key="pallets_per_day"
-        )
+        pallets_per_hour = ""
+        pallets_per_day = ""
 
         shifts_per_day = st.number_input(
             "Shifts per Day",
@@ -416,12 +411,14 @@ def build_header_inputs():
         )
 
         if temperature_range == "Below 0°C":
-            st.error("This project is not possible for temperature below 0°C. The form stops here and no further questions should be answered.")
+            st.error("This project is not possible for temperature below 0°C.")
 
     with col_op2:
-        hours_per_shift = st.text_input(
+        hours_per_shift = st.number_input(
             "Hours per Shift",
-            value="",
+            min_value=0.0,
+            value=0.0,
+            step=0.5,
             key="peak_hours"
         )
 
