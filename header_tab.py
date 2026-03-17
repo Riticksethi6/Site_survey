@@ -116,7 +116,7 @@ def build_header_inputs():
         "pallet_width_mm": 0,
     }
 
-    st.markdown("### Application(s)")
+    st.markdown("### Application(s)*")
     application = st.multiselect(
         "Select all that apply",
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
