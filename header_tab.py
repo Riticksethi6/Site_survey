@@ -145,6 +145,7 @@ def build_header_inputs():
     stacking_type = None
     stacking_type_other = ""
     storage_layout = ""
+    storage_locations = ""
     box_distance_mm = 0
     aisle_width_mm = 0
     conveyor_height = 0
@@ -246,6 +247,12 @@ def build_header_inputs():
                 "Storage Layout Description",
                 height=80,
                 key="storage_layout"
+            )
+
+            storage_locations = st.text_area(
+                "Number and Size of Storage Locations",
+                height=80,
+                key="storage_locations"
             )
 
             box_distance_mm = st.number_input(
