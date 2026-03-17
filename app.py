@@ -197,7 +197,7 @@ agree = st.checkbox("I agree to the statement above", key="agree_generate_report
 temperature_blocked = all_data.get("temperature_range") == "Below 0°C"
 
 if st.button("Generate Report", type="primary", disabled=(not agree or temperature_blocked)):
-    required_fields = ["customer_name", "customer_email", "customer_mobile", "application"]
+    required_fields = ["customer_name", "project_name", "Project_location", "application"]
     missing = [field for field in required_fields if not all_data.get(field)]
 
     if missing:
