@@ -409,7 +409,7 @@ def build_header_inputs():
         )
 
         if temperature_range == "Below 0°C":
-            st.error("This project is not possible for temperature below 0°C.")
+            st.error("This project is not possible for temperature below 0°C."),
             st.stop()
 
     with col_op2:
