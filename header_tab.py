@@ -83,8 +83,8 @@ def build_header_inputs():
 
     with col1:
         customer_name = st.text_input("Customer Name *", key="customer_name")
-        customer_email = st.text_input("Customer Email *", key="customer_email")
-        customer_mobile = st.text_input("Customer Mobile Number *", key="customer_mobile")
+        customer_email = st.text_input("Customer Email ", key="customer_email")
+        customer_mobile = st.text_input("Customer Mobile Number ", key="customer_mobile")
         project_name = st.text_input("Project Name", key="project_name")
         project_location = st.text_input("Project Location", key="project_location")
         warehouse_area = st.text_input("Warehouse / Workshop Area [sq m]", key="warehouse_area")
