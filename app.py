@@ -138,17 +138,57 @@ with tab1:
     from header_tab import build_header_inputs
     header_data = build_header_inputs()
 
+temperature_blocked = header_data.get("temperature_range") == "Below 0°C"
+
 with tab2:
-    from secondary_tab import build_material_flow_inputs
-    material_flow_data = build_material_flow_inputs()
+    if temperature_blocked:
+        st.warning("Project not possible: temperature below 0°C. Material flow questions are disabled.")
+        material_flow_data = {
+            "flow_sequence": [],
+            "flow_steps": "",
+            "route_details": [],
+            "route_summary": "",
+            "material_flow_text": "",
+            "special_comments": "",
+            "distances": [],
+            "photos": [],
+        }
+    else:
+        from secondary_tab import build_material_flow_inputs
+        material_flow_data = build_material_flow_inputs()
 
 with tab3:
-    from data_flow_tab import build_data_flow_inputs
-    data_flow_data = build_data_flow_inputs()
+    if temperature_blocked:
+        st.warning("Project not possible: temperature below 0°C. Data flow and integration questions are disabled.")
+        data_flow_data = {
+            "integration_req": "",
+            "data_flow_text": "",
+            "connections": [],
+            "connections_details": "",
+            "data_flow_additional_notes": "",
+        }
+    else:
+        from data_flow_tab import build_data_flow_inputs
+        data_flow_data = build_data_flow_inputs()
 
 with tab4:
-    from site_conditions_tab import build_site_conditions_inputs
-    site_data = build_site_conditions_inputs()
+    if temperature_blocked:
+        st.warning("Project not possible: temperature below 0°C. Site condition follow-up questions are disabled.")
+        site_data = {
+            "other_agvs": "",
+            "other_traffic": "",
+            "ramp_gradient_deg": "",
+            "parking_area": "",
+            "charging_status": "",
+            "battery_heating": False,
+            "network_coverage": "",
+            "charging_stations": "",
+            "ground_gaps_mm": "",
+            "special_demand": "",
+        }
+    else:
+        from site_conditions_tab import build_site_conditions_inputs
+        site_data = build_site_conditions_inputs()
 
 all_data = {
     **header_data,
@@ -196,8 +236,12 @@ st.info(
 agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
 temperature_blocked = all_data.get("temperature_range") == "Below 0°C"
 
+if temperature_blocked:
+    st.error("This project is not possible for temperature below 0°C. No further questions can be answered and report generation is blocked.")
+    st.stop()
+
 if st.button("Generate Report", type="primary", disabled=(not agree or temperature_blocked)):
-    required_fields = ["customer_name", "project_name", "Project_location", "application"]
+    required_fields = ["customer_name", "project_name", "project_location", "application"]
     missing = [field for field in required_fields if not all_data.get(field)]
 
     if missing:
@@ -284,7 +328,9 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             )
 
             storage_location_lines = []
-            if "Stacking/Conveyor" in selected_apps and all_data.get("storage_layout"):
+            if "Stacking/Conveyor" in selected_apps and all_data.get("storage_locations"):
+                storage_location_lines.append(f"XQE storage locations: {all_data.get('storage_locations')}")
+            elif "Stacking/Conveyor" in selected_apps and all_data.get("storage_layout"):
                 storage_location_lines.append(f"XQE storage layout / locations: {all_data.get('storage_layout')}")
             context["storage_locations_text"] = "\n".join(storage_location_lines)
 
@@ -302,6 +348,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                 add_line(application_lines, "Stacking type", all_data.get("stacking_type"))
                 add_line(application_lines, "Stacking type (other)", all_data.get("stacking_type_other"))
                 add_line(application_lines, "Storage layout description", all_data.get("storage_layout"))
+                add_line(application_lines, "Storage locations", all_data.get("storage_locations"))
                 add_line(application_lines, "Distance between pallets / boxes", all_data.get("box_distance_mm"), " mm")
                 add_line(application_lines, "Available aisle width", all_data.get("aisle_width_mm"), " mm")
                 add_line(application_lines, "Conveyor height", all_data.get("conveyor_height"), " mm")
@@ -363,8 +410,12 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                 integration_support_lines.append(f"Additional positioning / support notes: {all_data.get('data_flow_additional_notes')}")
             context["integration_support_text"] = "\n".join(integration_support_lines)
 
-            context["ground_gaps_text"] = ""
-            context["special_demand"] = ""
+            context["ground_gaps_text"] = (
+                f"Ground gaps / depressions: {all_data.get('ground_gaps_mm')} mm"
+                if all_data.get("ground_gaps_mm") not in (None, "", 0, 0.0)
+                else ""
+            )
+            context["special_demand"] = all_data.get("special_demand", "")
             context["transport_distance_text"] = material_flow_data.get("flow_pairs_text", "")
             context["material_step_details_text"] = material_flow_data.get("step_details_text", "")
             context["special_comments"] = all_data.get("special_comments", "")

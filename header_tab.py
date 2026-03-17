@@ -409,8 +409,7 @@ def build_header_inputs():
         )
 
         if temperature_range == "Below 0°C":
-            st.error("This project is not possible for temperature below 0°C."),
-            st.stop()
+            st.error("This project is not possible for temperature below 0°C. The form stops here and no further questions should be answered.")
 
     with col_op2:
         hours_per_shift = st.text_input(
@@ -533,6 +532,7 @@ def build_header_inputs():
         "stacking_type": stacking_type,
         "stacking_type_other": stacking_type_other,
         "storage_layout": storage_layout,
+        "storage_locations": storage_locations,
         "box_distance_mm": box_distance_mm,
         "aisle_width_mm": aisle_width_mm,
         "conveyor_height": conveyor_height,
