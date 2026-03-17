@@ -1,5 +1,3 @@
-# secondary_tab.py
-
 import streamlit as st
 
 
@@ -11,6 +9,37 @@ FLOW_OPTIONS = [
     "Floor Storage",
     "Outbound",
 ]
+
+PROCESS_TIMING_OPTIONS = [
+    "Simultaneous / continuous",
+    "On request / intermittent",
+]
+
+
+def _format_route_summary(route: dict) -> str:
+    return (
+        f"{route['from']} → {route['to']} | "
+        f"Pallets/hour: {route['pallets_per_hour']} | "
+        f"Average distance: {route['avg_distance_m']} m | "
+        f"Flow type: {route['process_type']}"
+    )
+
+
+def _format_step_detail(route: dict) -> str:
+    base = (
+        f"From {route['from']} to {route['to']}: "
+        f"{route['avg_distance_m']} m, with a capacity of {route['pallets_per_hour']} pallets per hour"
+    )
+    if route["process_type"] == "On request / intermittent":
+        return base + " (on request)."
+    return base + "."
+
+
+def _format_process_efficiency(route: dict) -> str:
+    line = f"{route['from']} → {route['to']}: {route['pallets_per_hour']} pallets/hour"
+    if route["process_type"] == "On request / intermittent":
+        line += " (on request)"
+    return line
 
 
 def build_material_flow_inputs():
@@ -45,6 +74,10 @@ def build_material_flow_inputs():
     flow_steps = " → ".join(flow_sequence)
 
     st.markdown("### Flow Details Between Steps")
+    st.caption(
+        "For each route, enter the transport distance and route capacity. "
+        "Mark whether the flow is continuous/simultaneous or only triggered on request."
+    )
 
     route_details = []
     distances = []
@@ -76,20 +109,28 @@ def build_material_flow_inputs():
                 key=f"route_avg_distance_{i}"
             )
 
+        process_type = st.radio(
+            f"Flow Timing: {source_step} → {target_step}",
+            PROCESS_TIMING_OPTIONS,
+            horizontal=True,
+            key=f"route_process_type_{i}"
+        )
+
         source_image = st.file_uploader(
             f"Upload Image / Layout for {source_step}",
             type=["jpg", "jpeg", "png", "pdf"],
             key=f"route_source_image_{i}"
         )
 
-        route_details.append({
+        route = {
             "from": source_step,
             "to": target_step,
             "pallets_per_hour": pallets_per_hour,
             "avg_distance_m": avg_distance,
+            "process_type": process_type,
             "source_image": source_image,
-        })
-
+        }
+        route_details.append(route)
         distances.append(avg_distance)
         route_images.append(source_image)
 
@@ -109,16 +150,29 @@ def build_material_flow_inputs():
         key="special_comments"
     )
 
-    # Readable summary for Word template
-    route_summary_lines = []
-    for route in route_details:
-        route_summary_lines.append(
-            f"{route['from']} → {route['to']} | "
-            f"Pallets/hour: {route['pallets_per_hour']} | "
-            f"Average distance: {route['avg_distance_m']} m"
-        )
+    route_summary = "\n".join(_format_route_summary(route) for route in route_details)
+    step_details_text = "\n".join(_format_step_detail(route) for route in route_details)
+    process_efficiency_text = "\n".join(_format_process_efficiency(route) for route in route_details)
+    flow_pairs_text = "\n".join(f"{route['from']} → {route['to']}: {route['avg_distance_m']} m" for route in route_details)
 
-    route_summary = "\n".join(route_summary_lines)
+    simultaneous_total = sum(
+        route["pallets_per_hour"]
+        for route in route_details
+        if route["process_type"] == "Simultaneous / continuous"
+    )
+
+    on_request_routes = [
+        f"{route['from']} → {route['to']}"
+        for route in route_details
+        if route["process_type"] == "On request / intermittent"
+    ]
+
+    operational_efficiency_note = ""
+    if on_request_routes:
+        route_list = ", ".join(on_request_routes)
+        operational_efficiency_note = (
+            f"The following flows do not always happen simultaneously and are triggered only when required: {route_list}."
+        )
 
     return {
         "flow_sequence": flow_sequence,
@@ -129,4 +183,9 @@ def build_material_flow_inputs():
         "special_comments": special_comments,
         "distances": distances,
         "photos": [img for img in route_images if img],
+        "flow_pairs_text": flow_pairs_text,
+        "step_details_text": step_details_text,
+        "process_efficiency_text": process_efficiency_text,
+        "simultaneous_pallets_per_hour": simultaneous_total,
+        "operational_efficiency_note": operational_efficiency_note,
     }
