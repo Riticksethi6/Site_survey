@@ -132,19 +132,16 @@ def _build_operational_metrics(route_details, hours_per_shift, shifts_per_day):
     if any((route.get("flow_type") == "On request / intermittent") for route in (route_details or [])):
         notes.append("Some flows such as outbound do not always happen simultaneously and are triggered only when requested.")
 
+    if simultaneous_total > 0:
+        notes.append(f"Daily throughput is calculated from simultaneous flows only. Simultaneous total used for calculation: {int(round(simultaneous_total))} pallets/hour.")
+
     pallets_per_day = ""
     if simultaneous_total > 0 and hours_per_shift > 0 and shifts_per_day > 0:
         pallets_per_day = int(round(simultaneous_total * hours_per_shift * shifts_per_day))
 
-    pallets_per_hour_display_lines = list(process_lines)
-    if simultaneous_total > 0:
-        pallets_per_hour_display_lines.append(
-            f"Overall simultaneous handling capacity: {int(round(simultaneous_total))} pallets/hour"
-        )
-
     return {
         "process_efficiency_text": "\n".join(process_lines),
-        "pallets_per_hour": "\n".join(pallets_per_hour_display_lines),
+        "pallets_per_hour": "\n".join(process_lines),
         "pallets_per_hour_total": simultaneous_total,
         "pallets_per_day": pallets_per_day,
         "operational_efficiency_note": "\n".join(notes),
