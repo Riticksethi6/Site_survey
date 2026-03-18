@@ -47,10 +47,10 @@ def build_material_flow_inputs():
     st.markdown("### Material Flow Sequence")
     st.info(
         "Define the route in the same order as the real operation.\n\n"
-        "Step 1: Inbound = receiving / unloading\n"
-        "Step 2: Production = process area\n"
-        "Step 3: Buffer Storage / Rack Storage / Floor Storage = temporary or final storage\n"
-        "Final step: Outbound = dispatch / shipping\n\n"
+        "Step 1: Inbound = receiving / unloading \n"
+        "Step 2: Production = process area \n"
+        "Step 3: Buffer Storage / Rack Storage / Floor Storage = temporary or final storage \n"
+        "Final step: Outbound = dispatch / shipping \n\n"
         "You can create as many steps as needed. The next-step options are guided by the previous step."
     )
 
