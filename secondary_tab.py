@@ -95,7 +95,7 @@ def build_material_flow_inputs():
 
     st.markdown("### Flow Details Between Steps")
     st.caption(
-        "For each route, enter the process capacity and average travel distance. "
+        "For each route, enter the Operation efficiency and average travel distance. "
         "Use 'Simultaneous / continuous' for flows that happen in parallel, and 'On request / intermittent' for flows like dispatch or demand-based movement."
     )
 
@@ -116,7 +116,7 @@ def build_material_flow_inputs():
 
         with col1:
             pallets_per_hour = st.number_input(
-                f"Process Capacity [pallets/hour]: {source_step} → {target_step}",
+                f"Pallets/hour: {source_step} → {target_step}",
                 min_value=0,
                 value=0,
                 step=1,
