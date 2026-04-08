@@ -132,16 +132,19 @@ def _build_operational_metrics(route_details, hours_per_shift, shifts_per_day):
     if any((route.get("flow_type") == "On request / intermittent") for route in (route_details or [])):
         notes.append("Some flows such as outbound do not always happen simultaneously and are triggered only when requested.")
 
-    if simultaneous_total > 0:
-        notes.append(f"Daily throughput is calculated from simultaneous flows only. Simultaneous total used for calculation: {int(round(simultaneous_total))} pallets/hour.")
-
     pallets_per_day = ""
     if simultaneous_total > 0 and hours_per_shift > 0 and shifts_per_day > 0:
         pallets_per_day = int(round(simultaneous_total * hours_per_shift * shifts_per_day))
 
+    pallets_per_hour_display_lines = list(process_lines)
+    if simultaneous_total > 0:
+        pallets_per_hour_display_lines.append(
+            f"Overall simultaneous handling capacity: {int(round(simultaneous_total))} pallets/hour"
+        )
+
     return {
         "process_efficiency_text": "\n".join(process_lines),
-        "pallets_per_hour": "\n".join(process_lines),
+        "pallets_per_hour": "\n".join(pallets_per_hour_display_lines),
         "pallets_per_hour_total": simultaneous_total,
         "pallets_per_day": pallets_per_day,
         "operational_efficiency_note": "\n".join(notes),
@@ -201,7 +204,10 @@ with tab2:
 
 with tab3:
     from data_flow_tab import build_data_flow_inputs
-    data_flow_data = build_data_flow_inputs()
+    data_flow_data = build_data_flow_inputs(
+        route_details=material_flow_data.get('route_details', []),
+        selected_apps=header_data.get('application', []),
+    )
 
 with tab4:
     from site_conditions_tab import build_site_conditions_inputs
@@ -362,6 +368,14 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             context["transport_distance_text"] = material_flow_data.get("flow_pairs_text", "")
             context["material_step_details_text"] = material_flow_data.get("step_details_text", "")
             context["special_comments"] = all_data.get("special_comments", "")
+
+            context["system_architecture_text"] = all_data.get("system_architecture_text", "")
+            context["integration_route_text"] = all_data.get("integration_route_text", "")
+            context["data_flow_diagram_text"] = all_data.get("data_flow_diagram_text", "")
+            context["task_flow_text"] = all_data.get("task_flow_text", "")
+            context["connected_systems_text"] = all_data.get("connected_systems_text", "")
+            context["status_feedback_text"] = all_data.get("status_feedback_text", "")
+            context["key_data_exchange_text"] = all_data.get("key_data_exchange_text", "")
 
             if pallets:
                 pallet_lines = []
