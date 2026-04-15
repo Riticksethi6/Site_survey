@@ -229,6 +229,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     selected_apps = selected_apps or []
 
     st.subheader("3. Data Flow & Integration")
+    st.caption("DATA FLOW BUILD 2026-03-17-A")
     st.info(
         "Define the overall integration scope first. Then, for each material-flow process, choose the system blocks in sequence and describe what information is needed in which system."
     )
@@ -263,7 +264,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             "connected_systems_text": "EP equipment",
             "status_feedback_text": "",
             "key_data_exchange_text": "",
-            "route_flow_summaries": [],
+            
         }
 
     st.markdown("### Overall integration scope")
