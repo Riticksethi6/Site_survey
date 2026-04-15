@@ -91,66 +91,6 @@ def clean_value(value):
     return value
 
 
-def _format_number(value):
-    if value in (None, ""):
-        return ""
-    try:
-        numeric = float(value)
-    except (TypeError, ValueError):
-        return str(value)
-    if numeric.is_integer():
-        return str(int(numeric))
-    return f"{numeric:.2f}".rstrip("0").rstrip(".")
-
-
-def _to_float(value):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def _build_operational_metrics(route_details, hours_per_shift, shifts_per_day):
-    process_lines = []
-    simultaneous_total = 0.0
-    notes = []
-
-    for route in route_details or []:
-        from_step = route.get("from", "")
-        to_step = route.get("to", "")
-        capacity = _to_float(route.get("pallets_per_hour"))
-        flow_type = route.get("flow_type", "Simultaneous / continuous")
-
-        if from_step and to_step:
-            line = f"{from_step} → {to_step}: {_format_number(capacity)} pallets/hour"
-            if flow_type == "On request / intermittent":
-                line += " (on request)"
-            else:
-                simultaneous_total += capacity
-            process_lines.append(line)
-
-    if any((route.get("flow_type") == "On request / intermittent") for route in (route_details or [])):
-        notes.append("Some flows such as outbound do not always happen simultaneously and are triggered only when requested.")
-
-    pallets_per_day = ""
-    if simultaneous_total > 0 and hours_per_shift > 0 and shifts_per_day > 0:
-        pallets_per_day = int(round(simultaneous_total * hours_per_shift * shifts_per_day))
-
-    pallets_per_hour_display_lines = list(process_lines)
-    if simultaneous_total > 0:
-        pallets_per_hour_display_lines.append(
-            f"Overall simultaneous handling capacity: {int(round(simultaneous_total))} pallets/hour"
-        )
-
-    return {
-        "process_efficiency_text": "\n".join(process_lines),
-        "pallets_per_hour": "\n".join(pallets_per_hour_display_lines),
-        "pallets_per_hour_total": simultaneous_total,
-        "pallets_per_day": pallets_per_day,
-        "operational_efficiency_note": "\n".join(notes),
-    }
-
-
 st.set_page_config(page_title="EP Equipment – Site Survey Dashboard", layout="wide")
 
 if "report_ready" not in st.session_state:
@@ -221,12 +161,7 @@ all_data = {
 }
 
 selected_apps = all_data.get("application", [])
-route_details = material_flow_data.get("route_details", [])
-distances = [
-    _to_float(route.get("avg_distance_m"))
-    for route in route_details
-    if _to_float(route.get("avg_distance_m")) > 0
-]
+distances = material_flow_data.get("distances", [])
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
 
 st.header("Reference – Layout Specifications")
@@ -280,15 +215,6 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             context = {k: clean_value(v) for k, v in all_data.items()}
 
-            hours_per_shift = _to_float(all_data.get("peak_hours"))
-            shifts_per_day = _to_float(all_data.get("shifts_per_day"))
-            operational_metrics = _build_operational_metrics(route_details, hours_per_shift, shifts_per_day)
-            context["process_efficiency_text"] = operational_metrics["process_efficiency_text"]
-            context["pallets_per_hour"] = operational_metrics["pallets_per_hour"]
-            context["pallets_per_hour_total"] = operational_metrics["pallets_per_hour_total"]
-            context["pallets_per_day"] = operational_metrics["pallets_per_day"]
-            context["operational_efficiency_note"] = operational_metrics["operational_efficiency_note"]
-
             pallets = all_data.get("pallets", [])
             if pallets:
                 primary_pallet = pallets[0]
@@ -315,56 +241,133 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             if not all_data.get("clearance_required"):
                 context["clearance_height_m"] = ""
 
+            def add_line(lines, label, value, suffix=""):
+                if value not in (None, "", [], 0, 0.0):
+                    lines.append(f"{label}: {value}{suffix}")
+
             aisle_lines = []
             if "Transport / Cross Docking" in selected_apps and all_data.get("cross_docking_aisle"):
-                aisle_lines.append(f"Transport / Cross Docking: {all_data.get('cross_docking_aisle')} m")
+                aisle_lines.append(f"XPL available aisle width: {all_data.get('cross_docking_aisle')} m")
             if "Stacking/Conveyor" in selected_apps and all_data.get("aisle_width_mm"):
-                aisle_lines.append(f"Stacking / Conveyor: {all_data.get('aisle_width_mm')} mm")
+                aisle_lines.append(f"XQE available aisle width: {all_data.get('aisle_width_mm')} mm")
             if "Narrow Aisle" in selected_apps and all_data.get("aisle_width_m"):
-                aisle_lines.append(f"Narrow Aisle: {all_data.get('aisle_width_m')} m")
+                aisle_lines.append(f"XNA available aisle width: {all_data.get('aisle_width_m')} m")
             context["aisle_width_text"] = "\n".join(aisle_lines)
+
+            load_weight_lines = []
+            if all_data.get("load_weight_kg"):
+                if "Transport / Cross Docking" in selected_apps:
+                    load_weight_lines.append(f"XPL load weight: {all_data.get('load_weight_kg')} kg")
+                if "Stacking/Conveyor" in selected_apps:
+                    load_weight_lines.append(f"XQE load weight: {all_data.get('load_weight_kg')} kg")
+                if "Narrow Aisle" in selected_apps:
+                    load_weight_lines.append(f"XNA load weight: {all_data.get('load_weight_kg')} kg")
+            context["load_weight_text"] = "\n".join(load_weight_lines)
+
+            stacking_height_lines = []
+            if all_data.get("max_stacking_height_m"):
+                if "Stacking/Conveyor" in selected_apps:
+                    stacking_height_lines.append(f"XQE maximum stacking height: {all_data.get('max_stacking_height_m')} m")
+                if "Narrow Aisle" in selected_apps:
+                    stacking_height_lines.append(f"XNA maximum stacking height: {all_data.get('max_stacking_height_m')} m")
+            context["stacking_height_text"] = "\n".join(stacking_height_lines)
+
+            stacking_level_lines = []
+            if all_data.get("stacking_level") not in (None, "", 0):
+                if "Stacking/Conveyor" in selected_apps:
+                    stacking_level_lines.append(f"XQE stacking level: {all_data.get('stacking_level')}")
+                if "Narrow Aisle" in selected_apps:
+                    stacking_level_lines.append(f"XNA stacking level: {all_data.get('stacking_level')}")
+            context["stacking_level_text"] = "\n".join(stacking_level_lines)
+
+            context["clearance_height_text"] = (
+                f"Clearance height under platform / obstacles: {all_data.get('clearance_height_m')} m"
+                if all_data.get("clearance_required") and all_data.get("clearance_height_m")
+                else ""
+            )
+
+            storage_location_lines = []
+            if "Stacking/Conveyor" in selected_apps and all_data.get("storage_layout"):
+                storage_location_lines.append(f"XQE storage layout / locations: {all_data.get('storage_layout')}")
+            context["storage_locations_text"] = "\n".join(storage_location_lines)
 
             application_lines = []
 
             if "Transport / Cross Docking" in selected_apps:
-                application_lines.append("Transport / Cross Docking:")
-                if all_data.get("xpl_sub_type"):
-                    application_lines.append(f"Application Type: {all_data.get('xpl_sub_type')}")
+                application_lines.append("XPL – Transport / Cross Docking:")
+                add_line(application_lines, "Application type", all_data.get("xpl_sub_type"))
                 application_lines.append("")
 
             if "Stacking/Conveyor" in selected_apps:
-                application_lines.append("Stacking / Conveyor:")
-                if all_data.get("pickup_type"):
-                    application_lines.append(f"Pickup Type: {all_data.get('pickup_type')}")
-                if all_data.get("pickup_type_other"):
-                    application_lines.append(f"Pickup Type (Other): {all_data.get('pickup_type_other')}")
-                if all_data.get("stacking_type"):
-                    application_lines.append(f"Stacking Type: {all_data.get('stacking_type')}")
-                if all_data.get("stacking_type_other"):
-                    application_lines.append(f"Stacking Type (Other): {all_data.get('stacking_type_other')}")
-                if all_data.get("storage_layout"):
-                    application_lines.append(f"Storage Layout Description: {all_data.get('storage_layout')}")
-                if all_data.get("box_distance_mm"):
-                    application_lines.append(f"Distance Between Pallets / Boxes: {all_data.get('box_distance_mm')} mm")
-                if all_data.get("aisle_width_mm"):
-                    application_lines.append(f"Aisle Width: {all_data.get('aisle_width_mm')} mm")
-                if all_data.get("conveyor_height"):
-                    application_lines.append(f"Conveyor Height: {all_data.get('conveyor_height')} mm")
-                if all_data.get("load_at_edge"):
-                    application_lines.append(f"Load arrives at conveyor edge: {all_data.get('load_at_edge')}")
-                if all_data.get("distance_from_edge"):
-                    application_lines.append(f"Distance from conveyor edge to pallet: {all_data.get('distance_from_edge')} mm")
+                application_lines.append("XQE – Stacking / Conveyor:")
+                add_line(application_lines, "Pickup type", all_data.get("pickup_type"))
+                add_line(application_lines, "Pickup type (other)", all_data.get("pickup_type_other"))
+                add_line(application_lines, "Stacking type", all_data.get("stacking_type"))
+                add_line(application_lines, "Stacking type (other)", all_data.get("stacking_type_other"))
+                add_line(application_lines, "Storage layout description", all_data.get("storage_layout"))
+                add_line(application_lines, "Distance between pallets / boxes", all_data.get("box_distance_mm"), " mm")
+                add_line(application_lines, "Available aisle width", all_data.get("aisle_width_mm"), " mm")
+                add_line(application_lines, "Conveyor height", all_data.get("conveyor_height"), " mm")
+                add_line(application_lines, "Load arrives at conveyor edge", all_data.get("load_at_edge"))
+                add_line(application_lines, "Distance from conveyor edge to pallet", all_data.get("distance_from_edge"), " mm")
                 application_lines.append("")
 
             if "Narrow Aisle" in selected_apps:
-                application_lines.append("Narrow Aisle:")
-                if all_data.get("aisle_width_m"):
-                    application_lines.append(f"Actual Aisle Width: {all_data.get('aisle_width_m')} m")
-                if all_data.get("xna_model"):
-                    application_lines.append(f"Preferred Model: {all_data.get('xna_model')}")
+                application_lines.append("XNA – Narrow Aisle:")
+                add_line(application_lines, "Available aisle width", all_data.get("aisle_width_m"), " m")
+                add_line(application_lines, "Preferred model", all_data.get("xna_model"))
                 application_lines.append("")
 
             context["application_specific_text"] = "\n".join([line for line in application_lines if line is not None]).strip()
+
+            summary_lines = []
+            if "Transport / Cross Docking" in selected_apps:
+                xpl_parts = []
+                if all_data.get("xpl_sub_type"):
+                    xpl_parts.append(f"Type: {all_data.get('xpl_sub_type')}")
+                if all_data.get("cross_docking_aisle"):
+                    xpl_parts.append(f"Aisle: {all_data.get('cross_docking_aisle')} m")
+                if all_data.get("load_weight_kg"):
+                    xpl_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
+                if xpl_parts:
+                    summary_lines.append("XPL summary: " + " | ".join(xpl_parts))
+            if "Stacking/Conveyor" in selected_apps:
+                xqe_parts = []
+                if all_data.get("pickup_type"):
+                    xqe_parts.append(f"Pickup: {all_data.get('pickup_type')}")
+                if all_data.get("stacking_type"):
+                    xqe_parts.append(f"Stacking: {all_data.get('stacking_type')}")
+                if all_data.get("max_stacking_height_m"):
+                    xqe_parts.append(f"Height: {all_data.get('max_stacking_height_m')} m")
+                if all_data.get("load_weight_kg"):
+                    xqe_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
+                if xqe_parts:
+                    summary_lines.append("XQE summary: " + " | ".join(xqe_parts))
+            if "Narrow Aisle" in selected_apps:
+                xna_parts = []
+                if all_data.get("xna_model"):
+                    xna_parts.append(f"Model: {all_data.get('xna_model')}")
+                if all_data.get("aisle_width_m"):
+                    xna_parts.append(f"Aisle: {all_data.get('aisle_width_m')} m")
+                if all_data.get("max_stacking_height_m"):
+                    xna_parts.append(f"Height: {all_data.get('max_stacking_height_m')} m")
+                if all_data.get("load_weight_kg"):
+                    xna_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
+                if xna_parts:
+                    summary_lines.append("XNA summary: " + " | ".join(xna_parts))
+            context["xqe_xpl_xna_summary_text"] = "\n".join(summary_lines)
+
+            integration_support_lines = []
+            if all_data.get("network_coverage"):
+                integration_support_lines.append(f"Network / RF coverage details: {all_data.get('network_coverage')}")
+            if all_data.get("battery_heating"):
+                integration_support_lines.append("Battery heating required for low-temperature operation: Yes")
+            if all_data.get("data_flow_additional_notes"):
+                integration_support_lines.append(f"Additional positioning / support notes: {all_data.get('data_flow_additional_notes')}")
+            context["integration_support_text"] = "\n".join(integration_support_lines)
+
+            context["ground_gaps_text"] = ""
+            context["special_demand"] = ""
             context["transport_distance_text"] = material_flow_data.get("flow_pairs_text", "")
             context["material_step_details_text"] = material_flow_data.get("step_details_text", "")
             context["special_comments"] = all_data.get("special_comments", "")
@@ -404,8 +407,8 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             fleet_estimates = []
             validation_summary = []
 
-            pallets_hr = _to_float(context.get("pallets_per_hour_total"))
-            avg_dist = _to_float(all_data.get("avg_transport_m"))
+            pallets_hr = all_data.get("pallets_per_hour", 0)
+            avg_dist = all_data.get("avg_transport_m", 0)
 
             if "Transport / Cross Docking" in selected_apps and all_data.get("cross_docking_aisle"):
                 aisle = all_data.get("cross_docking_aisle", 0)
