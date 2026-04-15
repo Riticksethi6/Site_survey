@@ -206,8 +206,10 @@ def _build_forward_nodes(trigger, info_source, leading_system, ep_wms_used, exec
     nodes.append(trigger_source)
     nodes.append(info_source)
     nodes.append(leading_system)
+
     if ep_wms_used == "Yes" and "EP WMS / DAS" not in nodes:
         nodes.append("EP WMS / DAS")
+
     nodes.append("EP USP Fleet Manager")
     nodes.append(execution)
     return _dedupe_consecutive(nodes)
@@ -217,9 +219,12 @@ def _build_return_nodes(execution, return_targets, ep_wms_used):
     targets = _clean_multiselect(return_targets)
     if not targets:
         return []
+
     nodes = [execution, "EP USP Fleet Manager"]
+
     if ep_wms_used == "Yes" and "EP WMS / DAS" not in targets:
         nodes.append("EP WMS / DAS")
+
     nodes.extend(targets)
     return _dedupe_consecutive(nodes)
 
@@ -229,7 +234,6 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     selected_apps = selected_apps or []
 
     st.subheader("3. Data Flow & Integration")
-    st.caption("DATA FLOW BUILD 2026-03-17-A")
     st.info(
         "Define the overall integration scope first. Then, for each material-flow process, choose the system blocks in sequence and describe what information is needed in which system."
     )
@@ -248,6 +252,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             "ep_wms_used": "No",
             "current_system_needed": "No",
             "current_system_name": "",
+            "current_system_type": "",
             "other_wms_integration_needed": "No",
             "other_wms_name": "",
             "integration_connections": [],
@@ -264,7 +269,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             "connected_systems_text": "EP equipment",
             "status_feedback_text": "",
             "key_data_exchange_text": "",
-            
+            "route_flow_summaries": [],
         }
 
     st.markdown("### Overall integration scope")
@@ -284,6 +289,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             horizontal=True,
             key="current_system_needed",
         )
+
         current_system_name = ""
         current_system_type = ""
         if current_system_needed == "Yes":
@@ -304,6 +310,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             horizontal=True,
             key="other_wms_integration_needed",
         )
+
         other_wms_name = ""
         if other_wms_integration_needed == "Yes":
             other_wms_name = st.text_input(
@@ -337,7 +344,12 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
         global_key_data = st.multiselect(
             "Default key data exchanged",
             KEY_DATA_OPTIONS,
-            default=["Pallet ID / Barcode", "Pickup location", "Destination / Storage location", "Task completed"],
+            default=[
+                "Pallet ID / Barcode",
+                "Pickup location",
+                "Destination / Storage location",
+                "Task completed",
+            ],
             key="global_key_data",
         )
 
@@ -364,6 +376,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
 
     for idx, route in enumerate(route_details or []):
         route_name = f"{route.get('from', 'Start')} → {route.get('to', 'End')}"
+
         with st.expander(f"Process {idx + 1}: {route_name}", expanded=(idx == 0)):
             col1, col2 = st.columns(2)
 
@@ -374,25 +387,39 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                     key=f"df_trigger_{idx}",
                 )
 
+                default_info_index = INFO_SOURCE_OPTIONS.index("Customer WMS") if (
+                    current_system_needed == "Yes" and "Customer WMS" in INFO_SOURCE_OPTIONS
+                ) else 0
+
                 info_source = st.selectbox(
                     f"Which system provides pallet / pickup / destination information for {route_name}?",
                     INFO_SOURCE_OPTIONS,
-                    index=INFO_SOURCE_OPTIONS.index("Customer WMS") if current_system_needed == "Yes" and "Customer WMS" in INFO_SOURCE_OPTIONS else 0,
+                    index=default_info_index,
                     key=f"df_info_source_{idx}",
                 )
 
                 leading_options = list(COORDINATION_OPTIONS)
                 if ep_wms_used == "No":
                     leading_options = [opt for opt in leading_options if opt != "EP WMS / DAS"]
+
+                default_leading_index = leading_options.index("Customer WMS") if (
+                    current_system_needed == "Yes" and "Customer WMS" in leading_options
+                ) else 0
+
                 leading_system = st.selectbox(
                     f"Select the system leading / coordinating {route_name}",
                     leading_options,
-                    index=leading_options.index("Customer WMS") if current_system_needed == "Yes" and "Customer WMS" in leading_options else 0,
+                    index=default_leading_index,
                     key=f"df_leading_system_{idx}",
                 )
 
             with col2:
-                execution_default = equipment_choices[0] if len(equipment_choices) == 1 else equipment_choices[min(idx, len(equipment_choices) - 1)]
+                execution_default = (
+                    equipment_choices[0]
+                    if len(equipment_choices) == 1
+                    else equipment_choices[min(idx, len(equipment_choices) - 1)]
+                )
+
                 execution = st.selectbox(
                     f"Which EP equipment executes {route_name}?",
                     equipment_choices,
@@ -407,17 +434,27 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                     key=f"df_statuses_{idx}",
                 )
 
+                default_return_targets = (
+                    ["Customer WMS"] if current_system_needed == "Yes"
+                    else (["EP WMS / DAS"] if ep_wms_used == "Yes" else [])
+                )
+
                 return_targets = st.multiselect(
                     f"Which systems receive the status / confirmation for {route_name}?",
                     RETURN_TARGET_OPTIONS,
-                    default=["Customer WMS"] if current_system_needed == "Yes" else (["EP WMS / DAS"] if ep_wms_used == "Yes" else []),
+                    default=default_return_targets,
                     key=f"df_return_targets_{idx}",
                 )
 
                 route_key_data = st.multiselect(
                     f"Data exchanged for {route_name}",
                     KEY_DATA_OPTIONS,
-                    default=global_key_data or ["Pallet ID / Barcode", "Pickup location", "Destination / Storage location", "Task completed"],
+                    default=global_key_data or [
+                        "Pallet ID / Barcode",
+                        "Pickup location",
+                        "Destination / Storage location",
+                        "Task completed",
+                    ],
                     key=f"df_data_{idx}",
                 )
 
@@ -428,8 +465,18 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                 key=f"df_process_notes_{idx}",
             )
 
-            forward_nodes = _build_forward_nodes(trigger, info_source, leading_system, ep_wms_used, execution)
-            return_nodes = _build_return_nodes(execution, return_targets, ep_wms_used)
+            forward_nodes = _build_forward_nodes(
+                trigger=trigger,
+                info_source=info_source,
+                leading_system=leading_system,
+                ep_wms_used=ep_wms_used,
+                execution=execution,
+            )
+            return_nodes = _build_return_nodes(
+                execution=execution,
+                return_targets=return_targets,
+                ep_wms_used=ep_wms_used,
+            )
 
             st.markdown("**Flow preview**")
             st.markdown(_flow_html(forward_nodes, return_nodes), unsafe_allow_html=True)
@@ -438,19 +485,21 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             if return_nodes:
                 diagram_line += "\nReturn: " + " → ".join(return_nodes)
 
-            route_flow_summaries.append({
-                "route_name": route_name,
-                "trigger": trigger,
-                "info_source": info_source,
-                "leading_system": leading_system,
-                "execution": execution,
-                "return_targets": return_targets,
-                "statuses": route_statuses,
-                "key_data": route_key_data,
-                "process_notes": process_notes.strip(),
-                "forward_nodes": forward_nodes,
-                "return_nodes": return_nodes,
-            })
+            route_flow_summaries.append(
+                {
+                    "route_name": route_name,
+                    "trigger": trigger,
+                    "info_source": info_source,
+                    "leading_system": leading_system,
+                    "execution": execution,
+                    "return_targets": return_targets,
+                    "statuses": route_statuses,
+                    "key_data": route_key_data,
+                    "process_notes": process_notes.strip(),
+                    "forward_nodes": forward_nodes,
+                    "return_nodes": return_nodes,
+                }
+            )
 
             task_block = [
                 f"{route_name}:",
@@ -461,6 +510,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                 f"Execution: {execution}",
                 f"Forward path: {' → '.join(forward_nodes)}",
             ]
+
             if return_nodes:
                 task_block.append(f"Return path: {' → '.join(return_nodes)}")
             if route_statuses:
@@ -477,13 +527,20 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             all_statuses.update(route_statuses)
             all_key_data.update(route_key_data)
 
-    connections = list(dict.fromkeys(integration_connections + ([current_system_type] if current_system_needed == "Yes" and current_system_type else []) + ([other_wms_name] if other_wms_name else [])))
+    connections = list(
+        dict.fromkeys(
+            integration_connections
+            + ([current_system_type] if current_system_needed == "Yes" and current_system_type else [])
+            + ([other_wms_name] if other_wms_name else [])
+        )
+    )
 
     integration_req_lines = [
         f"Integration required: {integration_required}",
         f"DAS / EP WMS required: {ep_wms_used}",
         f"Integration to current customer system needed: {current_system_needed}",
     ]
+
     if current_system_name:
         integration_req_lines.append(f"Current customer system: {current_system_name} ({current_system_type})")
     if other_wms_integration_needed == "Yes":
@@ -503,11 +560,18 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
 
     system_architecture_lines = []
     if current_system_needed == "Yes" and ep_wms_used == "Yes":
-        system_architecture_lines.append("Customer-side system integration is required. EP WMS / DAS is included as the mandatory coordination layer before EP USP Fleet Manager and AGV execution.")
+        system_architecture_lines.append(
+            "Customer-side system integration is required. EP WMS / DAS is included as the mandatory coordination layer before EP USP Fleet Manager and AGV execution."
+        )
     elif ep_wms_used == "Yes":
-        system_architecture_lines.append("EP WMS / DAS is used as the main coordination layer before EP USP Fleet Manager and AGV execution.")
+        system_architecture_lines.append(
+            "EP WMS / DAS is used as the main coordination layer before EP USP Fleet Manager and AGV execution."
+        )
     else:
-        system_architecture_lines.append("Customer / third-party systems coordinate the process and hand tasks to EP USP Fleet Manager for AGV execution.")
+        system_architecture_lines.append(
+            "Customer / third-party systems coordinate the process and hand tasks to EP USP Fleet Manager for AGV execution."
+        )
+
     if current_system_name:
         system_architecture_lines.append(f"Named customer system: {current_system_name}.")
     if other_wms_name:
@@ -518,17 +582,19 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
         integration_route_parts.append(current_system_name)
     elif current_system_needed == "Yes" and current_system_type:
         integration_route_parts.append(current_system_type)
+
     if other_wms_name:
         integration_route_parts.append(other_wms_name)
+
     if ep_wms_used == "Yes":
         integration_route_parts.append("EP WMS / DAS")
+
     integration_route_parts.append("EP USP Fleet Manager")
     integration_route_parts.append("EP equipment")
     integration_route_text = " → ".join(_dedupe_consecutive(integration_route_parts))
 
     data_flow_text = "\n\n".join(diagram_blocks)
     task_flow_text = "\n\n".join(task_flow_blocks)
-
     connected_systems_text = "\n".join(sorted(node for node in all_connected_nodes if node))
     status_feedback_text = "\n".join(sorted(status for status in all_statuses if status))
     key_data_exchange_text = "\n".join(sorted(item for item in all_key_data if item))
