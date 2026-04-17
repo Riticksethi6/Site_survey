@@ -47,15 +47,15 @@ def build_material_flow_inputs():
     st.markdown("### Material Flow Sequence")
     st.markdown(
         """
-    > Define the route in the same order as the real operation.
+> Define the route in the same order as the real operation.
 
-    - Step 1: **Inbound** = receiving / unloading
-    - Step 2: **Production** = process area
-    - Step 3: **Buffer Storage / Rack Storage / Floor Storage** = temporary or final storage
-    - Final step: **Outbound** = dispatch / shipping
+- Step 1: **Inbound** = receiving / unloading
+- Step 2: **Production** = process area
+- Step 3: **Buffer Storage / Rack Storage / Floor Storage** = temporary or final storage
+- Final step: **Outbound** = dispatch / shipping
 
-    You can create as many steps as needed. The next-step options are guided by the previous step.
-    """
+You can create as many steps as needed. The next-step options are guided by the previous step.
+"""
     )
 
     num_steps = st.number_input(
@@ -63,7 +63,7 @@ def build_material_flow_inputs():
         min_value=2,
         value=3,
         step=1,
-        key="num_flow_steps"
+        key="num_flow_steps",
     )
 
     flow_sequence = []
@@ -74,9 +74,7 @@ def build_material_flow_inputs():
             options = FLOW_OPTIONS
         else:
             previous_step = flow_sequence[-1]
-            options = NEXT_STEP_OPTIONS.get(previous_step, FLOW_OPTIONS)
-            if not options:
-                options = FLOW_OPTIONS
+            options = NEXT_STEP_OPTIONS.get(previous_step, FLOW_OPTIONS) or FLOW_OPTIONS
 
         current_value = st.session_state.get(f"flow_step_{i}")
         default_index = options.index(current_value) if current_value in options else 0
@@ -85,7 +83,7 @@ def build_material_flow_inputs():
             f"Step {i}",
             options,
             index=default_index,
-            key=f"flow_step_{i}"
+            key=f"flow_step_{i}",
         )
 
         flow_sequence.append(step_value)
@@ -95,8 +93,10 @@ def build_material_flow_inputs():
 
     st.markdown("### Flow Details Between Steps")
     st.caption(
-        "For each route, enter the Operation efficiency and average travel distance. "
-        "Use 'Simultaneous / continuous' for flows that happen in parallel, and 'On request / intermittent' for flows like dispatch or demand-based movement."
+        "For each route, enter the operation efficiency and average travel distance. "
+        "Use 'Simultaneous / continuous' for flows that happen in parallel, "
+        "'On request / intermittent' for demand-based flows, and "
+        "'No - not handled by EP automation' for steps that are outside EP automation scope."
     )
 
     route_details = []
@@ -120,7 +120,7 @@ def build_material_flow_inputs():
                 min_value=0,
                 value=0,
                 step=1,
-                key=f"route_pallets_per_hour_{i}"
+                key=f"route_pallets_per_hour_{i}",
             )
 
         with col2:
@@ -129,22 +129,27 @@ def build_material_flow_inputs():
                 min_value=0.0,
                 value=0.0,
                 step=1.0,
-                key=f"route_avg_distance_{i}"
+                key=f"route_avg_distance_{i}",
             )
 
         with col3:
             default_flow_type = "On request / intermittent" if target_step == "Outbound" else "Simultaneous / continuous"
+            flow_type_options = [
+                "Simultaneous / continuous",
+                "On request / intermittent",
+                "No - not handled by EP automation",
+            ]
             flow_type = st.selectbox(
                 f"Flow Type: {source_step} → {target_step}",
-                ["Simultaneous / continuous", "On request / intermittent"],
-                index=0 if default_flow_type == "Simultaneous / continuous" else 1,
-                key=f"route_flow_type_{i}"
+                flow_type_options,
+                index=flow_type_options.index(default_flow_type),
+                key=f"route_flow_type_{i}",
             )
 
         source_image = st.file_uploader(
             f"Upload Image / Layout for {source_step} → {target_step}",
             type=["jpg", "jpeg", "png", "pdf"],
-            key=f"route_source_image_{i}"
+            key=f"route_source_image_{i}",
         )
 
         route = {
@@ -163,18 +168,24 @@ def build_material_flow_inputs():
 
         route_summary_lines.append(f"{source_step} → {target_step}")
 
-        process_line = f"{source_step} → {target_step}: {_format_number(pallets_per_hour)} pallets/hour"
-        if flow_type == "On request / intermittent":
-            process_line += " (on request)"
+        if flow_type == "No - not handled by EP automation":
+            process_line = f"{source_step} → {target_step}: outside EP automation scope"
+        else:
+            process_line = f"{source_step} → {target_step}: {_format_number(pallets_per_hour)} pallets/hour"
+            if flow_type == "On request / intermittent":
+                process_line += " (on request)"
         process_efficiency_lines.append(process_line)
 
         detail_parts = []
-        if avg_distance > 0:
-            detail_parts.append(f"{_format_number(avg_distance)} m")
-        if pallets_per_hour > 0:
-            detail_parts.append(f"with a capacity of {_format_number(pallets_per_hour)} pallets per hour")
-        if flow_type == "On request / intermittent":
-            detail_parts.append("on request")
+        if flow_type == "No - not handled by EP automation":
+            detail_parts.append("outside EP automation scope")
+        else:
+            if avg_distance > 0:
+                detail_parts.append(f"{_format_number(avg_distance)} m")
+            if pallets_per_hour > 0:
+                detail_parts.append(f"with a capacity of {_format_number(pallets_per_hour)} pallets per hour")
+            if flow_type == "On request / intermittent":
+                detail_parts.append("on request")
 
         if detail_parts:
             step_details_lines.append(f"From {source_step} to {target_step}: " + ", ".join(detail_parts) + ".")
@@ -183,21 +194,38 @@ def build_material_flow_inputs():
 
     st.markdown("### Material Flow Summary")
 
+    job_to_do_flow = st.text_input(
+        "Job-To-Do / Process Name",
+        value="",
+        placeholder="e.g. Inbound put-away, production feeding, outbound replenishment",
+        key="job_to_do_flow",
+    )
+
     material_flow_text = st.text_area(
         "Material Flow Details",
         height=180,
         placeholder=(
-            "Describe the full operation in words. Example:\n"
-            "Receive pallets in inbound → move to buffer storage → feed production → store finished goods → dispatch outbound on request."
+            "Describe the actual process in words.\n"
+            "Example:\n"
+            "- Material arrives at inbound.\n"
+            "- It is moved to buffer storage.\n"
+            "- It is then supplied to production.\n"
+            "- Final finished goods move to outbound on request."
         ),
-        key="material_flow_text"
+        key="material_flow_text",
     )
 
     special_comments = st.text_area(
-        "Special Comments / Exceptions",
-        height=120,
-        placeholder="Mention any special routes, priority flows, blocked zones, one-way movement, or special handling requirements.",
-        key="special_comments"
+        "Special comments / direct flows / notes",
+        height=140,
+        placeholder="Add exceptions, direct flows, temporary storage logic, shared zones, or customer-specific notes.",
+        key="special_comments",
+    )
+
+    cad_file = st.file_uploader(
+        "Upload CAD / Layout File",
+        type=["pdf", "dwg", "dxf", "png", "jpg", "jpeg"],
+        key="cad_file",
     )
 
     return {
@@ -208,8 +236,11 @@ def build_material_flow_inputs():
         "material_flow_text": material_flow_text,
         "special_comments": special_comments,
         "distances": route_distances,
-        "photos": [img for img in route_images if img],
+        "photos": route_images,
         "flow_pairs_text": "\n".join(route_summary_lines),
         "step_details_text": "\n".join(step_details_lines),
+        "material_step_details_text": "\n".join(step_details_lines),
         "process_efficiency_text": "\n".join(process_efficiency_lines),
+        "cad_file": cad_file,
+        "job_to_do_flow": job_to_do_flow,
     }

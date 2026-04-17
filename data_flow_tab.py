@@ -233,9 +233,14 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     route_details = route_details or []
     selected_apps = selected_apps or []
 
+    route_details = [
+        route for route in route_details
+        if route.get("flow_type") != "No - not handled by EP automation"
+    ]
+
     st.subheader("3. Data Flow & Integration")
     st.info(
-        "Define the overall integration scope first. Then, for each material-flow process, choose the system blocks in sequence and describe what information is needed in which system."
+        "Define the overall integration scope first. Then, for each EP-automation process, choose the system flow in a simple sequence. Advanced settings stay collapsed unless needed."
     )
 
     integration_required = st.radio(
@@ -355,16 +360,16 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
 
     overall_notes = st.text_area(
         "Overall integration / API notes",
-        height=120,
+        height=100,
         placeholder="Describe API ownership, handshake expectations, middleware, error handling, timing, or any general integration requirement.",
         key="data_flow_additional_notes",
     )
 
     st.markdown("### Process-based Data Flow")
-    st.caption("Based on the material-flow routes you defined, configure the system flow for each process below.")
+    st.caption("Only the routes handled by EP automation are shown here.")
 
     if not route_details:
-        st.warning("No material-flow routes found yet. Please define routes in the Material Flow tab first.")
+        st.info("No EP-automation routes available for Data Flow.")
 
     equipment_choices = _equipment_options(selected_apps)
     route_flow_summaries = []
@@ -374,7 +379,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     all_statuses = set(global_status_feedback)
     all_key_data = set(global_key_data)
 
-    for idx, route in enumerate(route_details or []):
+    for idx, route in enumerate(route_details):
         route_name = f"{route.get('from', 'Start')} → {route.get('to', 'End')}"
 
         with st.expander(f"Process {idx + 1}: {route_name}", expanded=(idx == 0)):
@@ -382,7 +387,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
 
             with col1:
                 trigger = st.selectbox(
-                    f"Select the task trigger for {route_name}",
+                    f"Task trigger for {route_name}",
                     TRIGGER_OPTIONS,
                     key=f"df_trigger_{idx}",
                 )
@@ -392,7 +397,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                 ) else 0
 
                 info_source = st.selectbox(
-                    f"Which system provides pallet / pickup / destination information for {route_name}?",
+                    f"Info source for {route_name}",
                     INFO_SOURCE_OPTIONS,
                     index=default_info_index,
                     key=f"df_info_source_{idx}",
@@ -407,7 +412,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                 ) else 0
 
                 leading_system = st.selectbox(
-                    f"Select the system leading / coordinating {route_name}",
+                    f"Leading / coordinating system for {route_name}",
                     leading_options,
                     index=default_leading_index,
                     key=f"df_leading_system_{idx}",
@@ -421,49 +426,54 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                 )
 
                 execution = st.selectbox(
-                    f"Which EP equipment executes {route_name}?",
+                    f"EP equipment for {route_name}",
                     equipment_choices,
                     index=equipment_choices.index(execution_default),
                     key=f"df_execution_{idx}",
                 )
 
-                route_statuses = st.multiselect(
-                    f"Status returned for {route_name}",
-                    STATUS_OPTIONS,
-                    default=global_status_feedback or ["Task completed"],
-                    key=f"df_statuses_{idx}",
-                )
+            with st.expander("Advanced options", expanded=False):
+                col3, col4 = st.columns(2)
 
-                default_return_targets = (
-                    ["Customer WMS"] if current_system_needed == "Yes"
-                    else (["EP WMS / DAS"] if ep_wms_used == "Yes" else [])
-                )
+                with col3:
+                    route_statuses = st.multiselect(
+                        f"Status returned for {route_name}",
+                        STATUS_OPTIONS,
+                        default=global_status_feedback or ["Task completed"],
+                        key=f"df_statuses_{idx}",
+                    )
 
-                return_targets = st.multiselect(
-                    f"Which systems receive the status / confirmation for {route_name}?",
-                    RETURN_TARGET_OPTIONS,
-                    default=default_return_targets,
-                    key=f"df_return_targets_{idx}",
-                )
+                    route_key_data = st.multiselect(
+                        f"Data exchanged for {route_name}",
+                        KEY_DATA_OPTIONS,
+                        default=global_key_data or [
+                            "Pallet ID / Barcode",
+                            "Pickup location",
+                            "Destination / Storage location",
+                            "Task completed",
+                        ],
+                        key=f"df_data_{idx}",
+                    )
 
-                route_key_data = st.multiselect(
-                    f"Data exchanged for {route_name}",
-                    KEY_DATA_OPTIONS,
-                    default=global_key_data or [
-                        "Pallet ID / Barcode",
-                        "Pickup location",
-                        "Destination / Storage location",
-                        "Task completed",
-                    ],
-                    key=f"df_data_{idx}",
-                )
+                with col4:
+                    default_return_targets = (
+                        ["Customer WMS"] if current_system_needed == "Yes"
+                        else (["EP WMS / DAS"] if ep_wms_used == "Yes" else [])
+                    )
 
-            process_notes = st.text_area(
-                f"Please determine the data flow for this process. What information is needed in which system, or what information must be provided from which system? ({route_name})",
-                height=120,
-                placeholder="Example: PDA provides pallet barcode. Customer WMS provides pickup and drop-off location to EP WMS / DAS. EP WMS / DAS sends the task to EP USP Fleet Manager, which dispatches the AGV. Task status is returned to customer WMS.",
-                key=f"df_process_notes_{idx}",
-            )
+                    return_targets = st.multiselect(
+                        f"Systems receiving status / confirmation for {route_name}",
+                        RETURN_TARGET_OPTIONS,
+                        default=default_return_targets,
+                        key=f"df_return_targets_{idx}",
+                    )
+
+                process_notes = st.text_area(
+                    f"Process-specific notes ({route_name})",
+                    height=120,
+                    placeholder="Describe what information is needed in which system, and what should be sent back.",
+                    key=f"df_process_notes_{idx}",
+                )
 
             forward_nodes = _build_forward_nodes(
                 trigger=trigger,

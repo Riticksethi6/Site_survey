@@ -122,15 +122,21 @@ def _build_operational_metrics(route_details, hours_per_shift, shifts_per_day):
         flow_type = route.get("flow_type", "Simultaneous / continuous")
 
         if from_step and to_step:
-            line = f"{from_step} → {to_step}: {_format_number(capacity)} pallets/hour"
-            if flow_type == "On request / intermittent":
-                line += " (on request)"
+            if flow_type == "No - not handled by EP automation":
+                line = f"{from_step} → {to_step}: outside EP automation scope"
             else:
-                simultaneous_total += capacity
+                line = f"{from_step} → {to_step}: {_format_number(capacity)} pallets/hour"
+                if flow_type == "On request / intermittent":
+                    line += " (on request)"
+                else:
+                    simultaneous_total += capacity
             process_lines.append(line)
 
     if any((route.get("flow_type") == "On request / intermittent") for route in (route_details or [])):
         notes.append("Some flows such as outbound do not always happen simultaneously and are triggered only when requested.")
+
+    if any((route.get("flow_type") == "No - not handled by EP automation") for route in (route_details or [])):
+        notes.append("Routes marked as outside EP automation scope are excluded from EP throughput and fleet calculations.")
 
     if simultaneous_total > 0:
         notes.append(
