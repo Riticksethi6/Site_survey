@@ -1,15 +1,32 @@
 import os
 import zipfile
+import base64
 from io import BytesIO
 from datetime import datetime
 
 import streamlit as st
+import streamlit.components.v1 as components
 from docxtpl import DocxTemplate
 
 TEMPLATE_PATH = "template.docx"
 LOGO_PATH = "Picture2.png"
-XQE_PDF = "1.10_XQE_Layout_planning_Specification.pdf"
-XPL_PDF = "1.9_XPL_Layout_planning_Specification.pdf"
+
+XQE_PDF_CANDIDATES = [
+    "1.10_XQE_Layout_planning_Specification.pdf",
+    "1.10_XQE_Layout_Planning_Specification.pdf",
+]
+
+XPL_PDF_CANDIDATES = [
+    "1.9_XPL_Layout_planning_Specification.pdf",
+    "1.9_XPL_Layout_Planning_Specification.pdf",
+]
+
+
+def find_existing_file(candidates):
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
 
 
 def build_feedback_text(feedback_data: dict) -> str:
@@ -79,6 +96,33 @@ def feedback_dialog():
             st.session_state["feedback_saved"] = False
             st.session_state["feedback_popup_done"] = True
             st.rerun()
+
+
+@st.dialog("ZIP download started")
+def zip_download_popup():
+    st.success("Your ZIP download has started automatically.")
+    st.info("Please email this ZIP to: ritick.sethi@ep-equipment.eu")
+    st.write("If the browser blocks the automatic download, use the fallback download button below.")
+
+
+def trigger_auto_download(file_bytes: bytes, filename: str, mime: str = "application/zip"):
+    b64 = base64.b64encode(file_bytes).decode()
+    components.html(
+        f"""
+        <html>
+          <body>
+            <a id="auto-download-link" download="{filename}" href="data:{mime};base64,{b64}"></a>
+            <script>
+              const link = document.getElementById("auto-download-link");
+              if (link) {{
+                link.click();
+              }}
+            </script>
+          </body>
+        </html>
+        """,
+        height=0,
+    )
 
 
 def clean_value(value):
@@ -162,6 +206,8 @@ for key, default in {
     "feedback_saved": False,
     "feedback_popup_done": False,
     "feedback_popup_open": False,
+    "auto_zip_download_done": False,
+    "zip_popup_open": False,
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
@@ -225,27 +271,34 @@ st.header("Reference – Layout Specifications")
 
 col_pdf1, col_pdf2 = st.columns(2)
 
+xqe_pdf_path = find_existing_file(XQE_PDF_CANDIDATES)
+xpl_pdf_path = find_existing_file(XPL_PDF_CANDIDATES)
+
 with col_pdf1:
     st.subheader("XQE – Stacking AMR Layout Planning")
-    if os.path.exists(XQE_PDF):
-        with open(XQE_PDF, "rb") as pdf_file:
+    if xqe_pdf_path:
+        with open(xqe_pdf_path, "rb") as pdf_file:
             st.download_button(
                 label="Download Full XQE PDF",
                 data=pdf_file,
-                file_name=XQE_PDF,
+                file_name=os.path.basename(xqe_pdf_path),
                 mime="application/pdf",
             )
+    else:
+        st.warning("XQE PDF file not found in app folder.")
 
 with col_pdf2:
     st.subheader("XPL – Pallet Mover Layout Planning")
-    if os.path.exists(XPL_PDF):
-        with open(XPL_PDF, "rb") as pdf_file:
+    if xpl_pdf_path:
+        with open(xpl_pdf_path, "rb") as pdf_file:
             st.download_button(
                 label="Download Full XPL PDF",
                 data=pdf_file,
-                file_name=XPL_PDF,
+                file_name=os.path.basename(xpl_pdf_path),
                 mime="application/pdf",
             )
+    else:
+        st.warning("XPL PDF file not found in app folder.")
 
 st.markdown("### Generate Report")
 st.info(
@@ -359,12 +412,12 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             application_lines = []
 
             if "Transport / Cross Docking" in selected_apps:
-                application_lines.append("XPL – Transport / Cross Docking:")
+                application_lines.append("XPL - Transport / Cross Docking:")
                 add_line(application_lines, "Application type", all_data.get("xpl_sub_type"))
 
             if "Stacking/Conveyor" in selected_apps:
                 application_lines.append("")
-                application_lines.append("XQE – Stacking / Conveyor:")
+                application_lines.append("XQE - Stacking / Conveyor:")
                 add_line(application_lines, "Pickup type", all_data.get("pickup_type"))
                 add_line(application_lines, "Pickup type (other)", all_data.get("pickup_type_other"))
                 add_line(application_lines, "Stacking type", all_data.get("stacking_type"))
@@ -374,7 +427,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             if "Narrow Aisle" in selected_apps:
                 application_lines.append("")
-                application_lines.append("XNA – Narrow Aisle:")
+                application_lines.append("XNA - Narrow Aisle:")
                 add_line(application_lines, "Preferred model", all_data.get("xna_model"))
 
             context["application_specific_text"] = "\n".join([line for line in application_lines if line is not None]).strip()
@@ -485,7 +538,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     speed = 1.75
                     cycle_time = (avg_dist * 2 / speed) + 30 if avg_dist else 30
                     fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
-                    recommendations.append(f"XPL201 – {all_data.get('xpl_sub_type', 'Transport')} – Fast floor-level transport up to 2000 kg")
+                    recommendations.append(f"XPL201 - {all_data.get('xpl_sub_type', 'Transport')} - Fast floor-level transport up to 2000 kg")
                     fleet_estimates.append(f"XPL201: ~{fleet_size} vehicles")
 
             if "Stacking/Conveyor" in selected_apps and all_data.get("load_weight_kg") and all_data.get("max_stacking_height_m"):
@@ -499,7 +552,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     speed = 1.0
                     cycle_time = (avg_dist * 2 / speed) + 45 if avg_dist else 45
                     fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
-                    recommendations.append("XQE122 – Stacking / conveyor handling")
+                    recommendations.append("XQE122 - Stacking / conveyor handling")
                     fleet_estimates.append(f"XQE122: ~{fleet_size} vehicles")
 
             if "Narrow Aisle" in selected_apps and all_data.get("aisle_width_m") and all_data.get("xna_model"):
@@ -515,7 +568,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     speed = 1.0
                     cycle_time = (avg_dist * 2 / speed) + 60 if avg_dist else 60
                     fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
-                    recommendations.append(f"{model} – Narrow aisle stacking")
+                    recommendations.append(f"{model} - Narrow aisle stacking")
                     fleet_estimates.append(f"{model}: ~{fleet_size} vehicles")
 
             context["recommendation"] = "\n\n".join(recommendations) if recommendations else ""
@@ -548,6 +601,8 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             st.session_state["feedback_saved"] = False
             st.session_state["feedback_popup_done"] = False
             st.session_state["feedback_popup_open"] = True
+            st.session_state["auto_zip_download_done"] = False
+            st.session_state["zip_popup_open"] = False
             st.session_state["report_ready"] = True
 
             status_text.text("Report ready.")
@@ -613,15 +668,21 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
             zip_file.writestr("feedback.txt", build_feedback_text(feedback_data))
 
     final_zip_buffer.seek(0)
+    final_zip_bytes = final_zip_buffer.getvalue()
 
-    if feedback_data:
-        st.success("Feedback saved. Download the final ZIP below.")
-    else:
-        st.info("Feedback skipped. Download the final ZIP below.")
+    if not st.session_state.get("auto_zip_download_done"):
+        st.session_state["auto_zip_download_done"] = True
+        st.session_state["zip_popup_open"] = True
+        trigger_auto_download(final_zip_bytes, zip_filename, "application/zip")
+        st.rerun()
+
+    if st.session_state.get("zip_popup_open"):
+        st.session_state["zip_popup_open"] = False
+        zip_download_popup()
 
     st.download_button(
-        label="Download Final ZIP",
-        data=final_zip_buffer,
+        label="Download Final ZIP (fallback)",
+        data=final_zip_bytes,
         file_name=zip_filename,
         mime="application/zip",
         key="download_final_zip",
