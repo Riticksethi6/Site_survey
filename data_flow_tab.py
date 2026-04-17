@@ -145,9 +145,7 @@ TRIGGER_DEFAULT_SOURCE = {
 def _dedupe_keep_order(values):
     cleaned = []
     for value in values:
-        if not value:
-            continue
-        if value not in cleaned:
+        if value and value not in cleaned:
             cleaned.append(value)
     return cleaned
 
@@ -200,7 +198,15 @@ def _clean_multiselect(values):
     return [v for v in (values or []) if v]
 
 
-def _build_forward_nodes(trigger, info_source, leading_system, ep_wms_used, execution):
+def _build_execution_nodes(execution_mode, primary_vehicle, primary_action, secondary_vehicle, secondary_action):
+    if execution_mode == "Vehicle handover":
+        first_node = f"{primary_vehicle} {primary_action}".strip()
+        second_node = f"{secondary_vehicle} {secondary_action}".strip()
+        return _dedupe_consecutive([first_node, second_node])
+    return [primary_vehicle]
+
+
+def _build_forward_nodes(trigger, info_source, leading_system, ep_wms_used, execution_nodes):
     nodes = []
     trigger_source = TRIGGER_DEFAULT_SOURCE.get(trigger, trigger)
     nodes.append(trigger_source)
@@ -211,16 +217,16 @@ def _build_forward_nodes(trigger, info_source, leading_system, ep_wms_used, exec
         nodes.append("EP WMS / DAS")
 
     nodes.append("EP USP Fleet Manager")
-    nodes.append(execution)
+    nodes.extend(execution_nodes)
     return _dedupe_consecutive(nodes)
 
 
-def _build_return_nodes(execution, return_targets, ep_wms_used):
+def _build_return_nodes(final_execution_node, return_targets, ep_wms_used):
     targets = _clean_multiselect(return_targets)
     if not targets:
         return []
 
-    nodes = [execution, "EP USP Fleet Manager"]
+    nodes = [final_execution_node, "EP USP Fleet Manager"]
 
     if ep_wms_used == "Yes" and "EP WMS / DAS" not in targets:
         nodes.append("EP WMS / DAS")
@@ -240,7 +246,8 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
 
     st.subheader("3. Data Flow & Integration")
     st.info(
-        "Define the overall integration scope first. Then, for each EP-automation process, choose the system flow in a simple sequence. Advanced settings stay collapsed unless needed."
+        "Define the overall integration scope first. Then, for each EP-automation process, choose a simple system flow. "
+        "Only optional extra details are shown under advanced options."
     )
 
     integration_required = st.radio(
@@ -339,29 +346,10 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             key="api_protocols",
         )
 
-        global_status_feedback = st.multiselect(
-            "Default status feedback EP should return",
-            STATUS_OPTIONS,
-            default=["Task completed"],
-            key="global_status_feedback",
-        )
-
-        global_key_data = st.multiselect(
-            "Default key data exchanged",
-            KEY_DATA_OPTIONS,
-            default=[
-                "Pallet ID / Barcode",
-                "Pickup location",
-                "Destination / Storage location",
-                "Task completed",
-            ],
-            key="global_key_data",
-        )
-
     overall_notes = st.text_area(
         "Overall integration / API notes",
-        height=100,
-        placeholder="Describe API ownership, handshake expectations, middleware, error handling, timing, or any general integration requirement.",
+        height=90,
+        placeholder="Only add anything here if there is an important overall note.",
         key="data_flow_additional_notes",
     )
 
@@ -373,11 +361,11 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
 
     equipment_choices = _equipment_options(selected_apps)
     route_flow_summaries = []
-    task_flow_blocks = []
+    concise_flow_lines = []
     diagram_blocks = []
     all_connected_nodes = set()
-    all_statuses = set(global_status_feedback)
-    all_key_data = set(global_key_data)
+    all_statuses = set()
+    all_key_data = set()
 
     for idx, route in enumerate(route_details):
         route_name = f"{route.get('from', 'Start')} → {route.get('to', 'End')}"
@@ -418,19 +406,56 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                     key=f"df_leading_system_{idx}",
                 )
 
-            with col2:
-                execution_default = (
-                    equipment_choices[0]
-                    if len(equipment_choices) == 1
-                    else equipment_choices[min(idx, len(equipment_choices) - 1)]
+                provided_info = st.text_input(
+                    f"What does the source system provide? ({route_name})",
+                    placeholder="e.g. material type and storage location",
+                    key=f"df_provided_info_{idx}",
                 )
 
-                execution = st.selectbox(
-                    f"EP equipment for {route_name}",
-                    equipment_choices,
-                    index=equipment_choices.index(execution_default),
-                    key=f"df_execution_{idx}",
+            with col2:
+                execution_mode = st.radio(
+                    f"Execution mode for {route_name}",
+                    ["Single EP vehicle", "Vehicle handover"],
+                    horizontal=True,
+                    key=f"df_execution_mode_{idx}",
                 )
+
+                primary_vehicle = st.selectbox(
+                    f"Primary EP vehicle for {route_name}",
+                    equipment_choices,
+                    key=f"df_primary_vehicle_{idx}",
+                )
+
+                primary_action_default = "transport"
+                if route.get("to") in ["Rack Storage", "Buffer Storage", "Floor Storage"]:
+                    primary_action_default = "transport"
+
+                primary_action = st.text_input(
+                    f"Primary vehicle action ({route_name})",
+                    value=primary_action_default,
+                    key=f"df_primary_action_{idx}",
+                )
+
+                secondary_vehicle = ""
+                secondary_action = ""
+                if execution_mode == "Vehicle handover":
+                    secondary_vehicle = st.selectbox(
+                        f"Final EP vehicle for {route_name}",
+                        equipment_choices,
+                        index=min(1, len(equipment_choices) - 1) if len(equipment_choices) > 1 else 0,
+                        key=f"df_secondary_vehicle_{idx}",
+                    )
+                    secondary_action_default = "stacking"
+                    if route.get("to") == "Outbound":
+                        secondary_action_default = "transport"
+                    elif route.get("from") in ["Rack Storage", "Buffer Storage", "Floor Storage"] and route.get("to") == "Outbound":
+                        secondary_action_default = "transport"
+
+                    secondary_action = st.text_input(
+                        f"Final vehicle action ({route_name})",
+                        value=secondary_action_default,
+                        key=f"df_secondary_action_{idx}",
+                    )
 
             with st.expander("Advanced options", expanded=False):
                 col3, col4 = st.columns(2)
@@ -439,18 +464,17 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                     route_statuses = st.multiselect(
                         f"Status returned for {route_name}",
                         STATUS_OPTIONS,
-                        default=global_status_feedback or ["Task completed"],
+                        default=["Task completed"],
                         key=f"df_statuses_{idx}",
                     )
 
                     route_key_data = st.multiselect(
                         f"Data exchanged for {route_name}",
                         KEY_DATA_OPTIONS,
-                        default=global_key_data or [
+                        default=[
                             "Pallet ID / Barcode",
                             "Pickup location",
                             "Destination / Storage location",
-                            "Task completed",
                         ],
                         key=f"df_data_{idx}",
                     )
@@ -469,21 +493,31 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                     )
 
                 process_notes = st.text_area(
-                    f"Process-specific notes ({route_name})",
-                    height=120,
-                    placeholder="Describe what information is needed in which system, and what should be sent back.",
+                    f"Additional process note ({route_name})",
+                    height=90,
+                    placeholder="Only fill this if there is something extra to mention.",
                     key=f"df_process_notes_{idx}",
                 )
+
+            execution_nodes = _build_execution_nodes(
+                execution_mode=execution_mode,
+                primary_vehicle=primary_vehicle,
+                primary_action=primary_action,
+                secondary_vehicle=secondary_vehicle,
+                secondary_action=secondary_action,
+            )
 
             forward_nodes = _build_forward_nodes(
                 trigger=trigger,
                 info_source=info_source,
                 leading_system=leading_system,
                 ep_wms_used=ep_wms_used,
-                execution=execution,
+                execution_nodes=execution_nodes,
             )
+
+            final_execution_node = execution_nodes[-1] if execution_nodes else primary_vehicle
             return_nodes = _build_return_nodes(
-                execution=execution,
+                final_execution_node=final_execution_node,
                 return_targets=return_targets,
                 ep_wms_used=ep_wms_used,
             )
@@ -491,9 +525,18 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             st.markdown("**Flow preview**")
             st.markdown(_flow_html(forward_nodes, return_nodes), unsafe_allow_html=True)
 
+            concise_lines = [f"{route_name}:", " → ".join(forward_nodes)]
+            if provided_info.strip():
+                concise_lines.append(f"{info_source} provides: {provided_info.strip()}")
+            if process_notes.strip():
+                concise_lines.append(process_notes.strip())
+
+            concise_flow_lines.append("\n".join(concise_lines))
+
             diagram_line = " → ".join(forward_nodes)
             if return_nodes:
                 diagram_line += "\nReturn: " + " → ".join(return_nodes)
+            diagram_blocks.append(f"{route_name}:\n{diagram_line}")
 
             route_flow_summaries.append(
                 {
@@ -501,7 +544,12 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                     "trigger": trigger,
                     "info_source": info_source,
                     "leading_system": leading_system,
-                    "execution": execution,
+                    "execution_mode": execution_mode,
+                    "primary_vehicle": primary_vehicle,
+                    "primary_action": primary_action,
+                    "secondary_vehicle": secondary_vehicle,
+                    "secondary_action": secondary_action,
+                    "provided_info": provided_info.strip(),
                     "return_targets": return_targets,
                     "statuses": route_statuses,
                     "key_data": route_key_data,
@@ -511,27 +559,6 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                 }
             )
 
-            task_block = [
-                f"{route_name}:",
-                f"Trigger: {trigger}",
-                f"Information source: {info_source}",
-                f"Leading / coordinating system: {leading_system}",
-                "Fixed fleet layer: EP USP Fleet Manager",
-                f"Execution: {execution}",
-                f"Forward path: {' → '.join(forward_nodes)}",
-            ]
-
-            if return_nodes:
-                task_block.append(f"Return path: {' → '.join(return_nodes)}")
-            if route_statuses:
-                task_block.append(f"Status returned: {', '.join(route_statuses)}")
-            if route_key_data:
-                task_block.append(f"Data exchanged: {', '.join(route_key_data)}")
-            if process_notes.strip():
-                task_block.append(f"Process notes: {process_notes.strip()}")
-
-            task_flow_blocks.append("\n".join(task_block))
-            diagram_blocks.append(f"{route_name}:\n{diagram_line}")
             all_connected_nodes.update(forward_nodes)
             all_connected_nodes.update(return_nodes)
             all_statuses.update(route_statuses)
@@ -550,7 +577,6 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
         f"DAS / EP WMS required: {ep_wms_used}",
         f"Integration to current customer system needed: {current_system_needed}",
     ]
-
     if current_system_name:
         integration_req_lines.append(f"Current customer system: {current_system_name} ({current_system_type})")
     if other_wms_integration_needed == "Yes":
@@ -571,40 +597,30 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     system_architecture_lines = []
     if current_system_needed == "Yes" and ep_wms_used == "Yes":
         system_architecture_lines.append(
-            "Customer-side system integration is required. EP WMS / DAS is included as the mandatory coordination layer before EP USP Fleet Manager and AGV execution."
+            "Customer-side system integration is required. EP WMS / DAS is included as the mandatory coordination layer before EP USP Fleet Manager and EP vehicle execution."
         )
     elif ep_wms_used == "Yes":
         system_architecture_lines.append(
-            "EP WMS / DAS is used as the main coordination layer before EP USP Fleet Manager and AGV execution."
+            "EP WMS / DAS is used as the main coordination layer before EP USP Fleet Manager and EP vehicle execution."
         )
     else:
         system_architecture_lines.append(
-            "Customer / third-party systems coordinate the process and hand tasks to EP USP Fleet Manager for AGV execution."
+            "Customer / third-party systems coordinate the process and hand tasks to EP USP Fleet Manager for EP vehicle execution."
         )
-
-    if current_system_name:
-        system_architecture_lines.append(f"Named customer system: {current_system_name}.")
-    if other_wms_name:
-        system_architecture_lines.append(f"Additional integrated system: {other_wms_name}.")
 
     integration_route_parts = []
     if current_system_name:
         integration_route_parts.append(current_system_name)
     elif current_system_needed == "Yes" and current_system_type:
         integration_route_parts.append(current_system_type)
-
-    if other_wms_name:
-        integration_route_parts.append(other_wms_name)
-
     if ep_wms_used == "Yes":
         integration_route_parts.append("EP WMS / DAS")
-
     integration_route_parts.append("EP USP Fleet Manager")
     integration_route_parts.append("EP equipment")
-    integration_route_text = " → ".join(_dedupe_consecutive(integration_route_parts))
 
+    integration_route_text = " → ".join(_dedupe_consecutive(integration_route_parts))
     data_flow_text = "\n\n".join(diagram_blocks)
-    task_flow_text = "\n\n".join(task_flow_blocks)
+    task_flow_text = "\n\n".join(concise_flow_lines)
     connected_systems_text = "\n".join(sorted(node for node in all_connected_nodes if node))
     status_feedback_text = "\n".join(sorted(status for status in all_statuses if status))
     key_data_exchange_text = "\n".join(sorted(item for item in all_key_data if item))

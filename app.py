@@ -110,10 +110,10 @@ def _to_float(value):
         return 0.0
 
 
-def _build_operational_metrics(route_details, hours_per_shift, shifts_per_day):
+def _build_operational_metrics(route_details):
     process_lines = []
-    simultaneous_total = 0.0
     notes = []
+    simultaneous_total = 0.0
 
     for route in route_details or []:
         from_step = route.get("from", "")
@@ -121,37 +121,29 @@ def _build_operational_metrics(route_details, hours_per_shift, shifts_per_day):
         capacity = _to_float(route.get("pallets_per_hour"))
         flow_type = route.get("flow_type", "Simultaneous / continuous")
 
-        if from_step and to_step:
-            if flow_type == "No - not handled by EP automation":
-                line = f"{from_step} → {to_step}: outside EP automation scope"
+        if not (from_step and to_step):
+            continue
+
+        if flow_type == "No - not handled by EP automation":
+            line = f"{from_step} → {to_step}: outside EP automation scope"
+        else:
+            line = f"{from_step} → {to_step}: {_format_number(capacity)} pallets/hour"
+            if flow_type == "On request / intermittent":
+                line += " (on request)"
             else:
-                line = f"{from_step} → {to_step}: {_format_number(capacity)} pallets/hour"
-                if flow_type == "On request / intermittent":
-                    line += " (on request)"
-                else:
-                    simultaneous_total += capacity
-            process_lines.append(line)
+                simultaneous_total += capacity
 
-    if any((route.get("flow_type") == "On request / intermittent") for route in (route_details or [])):
-        notes.append("Some flows such as outbound do not always happen simultaneously and are triggered only when requested.")
+        process_lines.append(line)
 
-    if any((route.get("flow_type") == "No - not handled by EP automation") for route in (route_details or [])):
-        notes.append("Routes marked as outside EP automation scope are excluded from EP throughput and fleet calculations.")
-
-    if simultaneous_total > 0:
-        notes.append(
-            f"Simultaneous total used for daily throughput calculation: {int(round(simultaneous_total))} pallets/hour."
-        )
-
-    pallets_per_day = ""
-    if simultaneous_total > 0 and hours_per_shift > 0 and shifts_per_day > 0:
-        pallets_per_day = int(round(simultaneous_total * hours_per_shift * shifts_per_day))
+    if any(route.get("flow_type") == "On request / intermittent" for route in (route_details or [])):
+        notes.append("Some routes are triggered only on request.")
+    if any(route.get("flow_type") == "No - not handled by EP automation" for route in (route_details or [])):
+        notes.append("Routes outside EP automation scope are excluded from EP throughput and fleet calculations.")
 
     return {
-        "process_efficiency_text": "\n".join(process_lines),
         "pallets_per_hour": "\n".join(process_lines),
         "pallets_per_hour_total": simultaneous_total,
-        "pallets_per_day": pallets_per_day,
+        "pallets_per_day": "",
         "operational_efficiency_note": "\n".join(notes),
     }
 
@@ -280,13 +272,10 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             context = {k: clean_value(v) for k, v in all_data.items()}
 
-            hours_per_shift = _to_float(all_data.get("peak_hours"))
-            shifts_per_day = _to_float(all_data.get("shifts_per_day"))
-            operational_metrics = _build_operational_metrics(route_details, hours_per_shift, shifts_per_day)
-            context["process_efficiency_text"] = operational_metrics["process_efficiency_text"]
+            operational_metrics = _build_operational_metrics(route_details)
             context["pallets_per_hour"] = operational_metrics["pallets_per_hour"]
-            context["pallets_per_hour_total"] = operational_metrics["pallets_per_hour_total"]
             context["pallets_per_day"] = operational_metrics["pallets_per_day"]
+            context["pallets_per_hour_total"] = operational_metrics["pallets_per_hour_total"]
             context["operational_efficiency_note"] = operational_metrics["operational_efficiency_note"]
 
             pallets = all_data.get("pallets", [])
@@ -372,9 +361,9 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             if "Transport / Cross Docking" in selected_apps:
                 application_lines.append("XPL – Transport / Cross Docking:")
                 add_line(application_lines, "Application type", all_data.get("xpl_sub_type"))
-                application_lines.append("")
 
             if "Stacking/Conveyor" in selected_apps:
+                application_lines.append("")
                 application_lines.append("XQE – Stacking / Conveyor:")
                 add_line(application_lines, "Pickup type", all_data.get("pickup_type"))
                 add_line(application_lines, "Pickup type (other)", all_data.get("pickup_type_other"))
@@ -382,18 +371,11 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                 add_line(application_lines, "Stacking type (other)", all_data.get("stacking_type_other"))
                 add_line(application_lines, "Storage layout description", all_data.get("storage_layout"))
                 add_line(application_lines, "Storage locations", all_data.get("storage_locations"))
-                add_line(application_lines, "Distance between pallets / boxes", all_data.get("box_distance_mm"), " mm")
-                add_line(application_lines, "Available aisle width", all_data.get("aisle_width_mm"), " mm")
-                add_line(application_lines, "Conveyor height", all_data.get("conveyor_height"), " mm")
-                add_line(application_lines, "Load arrives at conveyor edge", all_data.get("load_at_edge"))
-                add_line(application_lines, "Distance from conveyor edge to pallet", all_data.get("distance_from_edge"), " mm")
-                application_lines.append("")
 
             if "Narrow Aisle" in selected_apps:
-                application_lines.append("XNA – Narrow Aisle:")
-                add_line(application_lines, "Available aisle width", all_data.get("aisle_width_m"), " m")
-                add_line(application_lines, "Preferred model", all_data.get("xna_model"))
                 application_lines.append("")
+                application_lines.append("XNA – Narrow Aisle:")
+                add_line(application_lines, "Preferred model", all_data.get("xna_model"))
 
             context["application_specific_text"] = "\n".join([line for line in application_lines if line is not None]).strip()
 
@@ -408,6 +390,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     xpl_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
                 if xpl_parts:
                     summary_lines.append("XPL summary: " + " | ".join(xpl_parts))
+
             if "Stacking/Conveyor" in selected_apps:
                 xqe_parts = []
                 if all_data.get("pickup_type"):
@@ -420,6 +403,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     xqe_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
                 if xqe_parts:
                     summary_lines.append("XQE summary: " + " | ".join(xqe_parts))
+
             if "Narrow Aisle" in selected_apps:
                 xna_parts = []
                 if all_data.get("xna_model"):
@@ -432,6 +416,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     xna_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
                 if xna_parts:
                     summary_lines.append("XNA summary: " + " | ".join(xna_parts))
+
             context["xqe_xpl_xna_summary_text"] = "\n".join(summary_lines)
 
             integration_support_lines = []

@@ -93,10 +93,8 @@ You can create as many steps as needed. The next-step options are guided by the 
 
     st.markdown("### Flow Details Between Steps")
     st.caption(
-        "For each route, enter the operation efficiency and average travel distance. "
-        "Use 'Simultaneous / continuous' for flows that happen in parallel, "
-        "'On request / intermittent' for demand-based flows, and "
-        "'No - not handled by EP automation' for steps that are outside EP automation scope."
+        "Enter only the route capacity and average travel distance here. "
+        "Use 'No - not handled by EP automation' for any step that is outside EP automation scope."
     )
 
     route_details = []
@@ -104,7 +102,6 @@ You can create as many steps as needed. The next-step options are guided by the 
     route_images = []
     route_summary_lines = []
     step_details_lines = []
-    process_efficiency_lines = []
 
     for i in range(len(flow_sequence) - 1):
         source_step = flow_sequence[i]
@@ -168,14 +165,6 @@ You can create as many steps as needed. The next-step options are guided by the 
 
         route_summary_lines.append(f"{source_step} → {target_step}")
 
-        if flow_type == "No - not handled by EP automation":
-            process_line = f"{source_step} → {target_step}: outside EP automation scope"
-        else:
-            process_line = f"{source_step} → {target_step}: {_format_number(pallets_per_hour)} pallets/hour"
-            if flow_type == "On request / intermittent":
-                process_line += " (on request)"
-        process_efficiency_lines.append(process_line)
-
         detail_parts = []
         if flow_type == "No - not handled by EP automation":
             detail_parts.append("outside EP automation scope")
@@ -208,17 +197,17 @@ You can create as many steps as needed. The next-step options are guided by the 
             "Describe the actual process in words.\n"
             "Example:\n"
             "- Material arrives at inbound.\n"
-            "- It is moved to buffer storage.\n"
-            "- It is then supplied to production.\n"
-            "- Final finished goods move to outbound on request."
+            "- It is moved to rack storage.\n"
+            "- Production replenishment happens on request.\n"
+            "- Outbound is triggered by customer request."
         ),
         key="material_flow_text",
     )
 
     special_comments = st.text_area(
         "Special comments / direct flows / notes",
-        height=140,
-        placeholder="Add exceptions, direct flows, temporary storage logic, shared zones, or customer-specific notes.",
+        height=120,
+        placeholder="Add exceptions, temporary storage logic, shared zones, or customer-specific notes.",
         key="special_comments",
     )
 
@@ -240,7 +229,6 @@ You can create as many steps as needed. The next-step options are guided by the 
         "flow_pairs_text": "\n".join(route_summary_lines),
         "step_details_text": "\n".join(step_details_lines),
         "material_step_details_text": "\n".join(step_details_lines),
-        "process_efficiency_text": "\n".join(process_efficiency_lines),
         "cad_file": cad_file,
         "job_to_do_flow": job_to_do_flow,
     }
