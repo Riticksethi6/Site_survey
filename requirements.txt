@@ -1,6 +1,6 @@
 # requirements.txt – for Streamlit Community Cloud / Render / Railway deployment
 # Core framework
-streamlit>=1.42.0
+
 docxtpl>=0.16.0
 python-docx>=1.1.0
 Pillow>=10.0.0
@@ -9,3 +9,4 @@ streamlit-authenticator>=0.3.0
 tqdm>=4.66.0
 plotly>=5.18.0
 PyPDF2>=3.0.0
+nicegui>=2.0.0\ndocxtpl>=0.16.0\npython-docx>=1.1.0\nPillow>=10.0.0\n
