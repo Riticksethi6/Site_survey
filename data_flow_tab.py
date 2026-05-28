@@ -69,20 +69,20 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     if integration_required == "No":
         st.markdown("**Data flow:**")
         st.markdown(
-            _flow_html(["EP USP Fleet Manager", "AGV Fleet"]),
+            _flow_html(["EP DAS / WMS", "EP USP Fleet Manager", "AGV Fleet"]),
             unsafe_allow_html=True,
         )
-        st.info("EP equipment will operate standalone without external system integration.")
+        st.info("No external system integration. EP DAS coordinates tasks via EP USP Fleet Manager to the AGV fleet.")
         return {
             "integration_required": "No",
-            "ep_wms_used": "No",
+            "ep_wms_used": "Yes",
             "connected_external_systems": [],
             "task_trigger": "",
             "data_flow_additional_notes": "",
-            "system_architecture_text": "No external integration required. EP equipment will run standalone.",
-            "integration_route_text": "EP USP Fleet Manager → AGV Fleet",
-            "task_flow_text": "No external task-flow integration required.",
-            "connected_systems_text": "EP USP Fleet Manager, AGV Fleet",
+            "system_architecture_text": "No external integration required. EP DAS coordinates tasks via EP USP Fleet Manager to the AGV fleet.",
+            "integration_route_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
+            "task_flow_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
+            "connected_systems_text": "EP DAS / WMS, EP USP Fleet Manager, AGV Fleet",
             "status_feedback_text": "",
             "key_data_exchange_text": "",
             "connections_details": "",
@@ -93,10 +93,10 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             "other_wms_name": "",
             "integration_connections": [],
             "api_protocols": [],
-            "integration_req": "Integration required: No",
-            "data_flow_text": "EP USP Fleet Manager → AGV Fleet",
+            "integration_req": "Integration required: No\nEP DAS layer: Yes",
+            "data_flow_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
             "connections": [],
-            "data_flow_diagram_text": "EP USP Fleet Manager → AGV Fleet",
+            "data_flow_diagram_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
             "route_flow_summaries": [],
         }
 
