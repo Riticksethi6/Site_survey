@@ -1,4 +1,5 @@
 import os
+import json
 import zipfile
 import base64
 from io import BytesIO
@@ -7,6 +8,7 @@ from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as components
 from docxtpl import DocxTemplate
+from translations import t, LANGUAGES
 
 TEMPLATE_PATH = "template.docx"
 LOGO_PATH = "Picture2.png"
@@ -208,9 +210,85 @@ for key, default in {
     "feedback_popup_open": False,
     "auto_zip_download_done": False,
     "zip_popup_open": False,
+    "lang": "en",
+    "app_mode": "expert",
+    "guided_step": 0,
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+_INTERNAL_KEYS = {
+    "report_ready", "generated_report_buffer", "generated_safe_name",
+    "generated_timestamp", "generated_cad_file", "generated_conveyor_picture",
+    "generated_photos", "generated_feedback", "feedback_saved",
+    "feedback_popup_done", "feedback_popup_open", "auto_zip_download_done",
+    "zip_popup_open", "lang", "app_mode", "guided_step",
+    "feedback_experience", "feedback_missing_questions", "feedback_improvements",
+    "feedback_contact_needed", "feedback_comments", "agree_generate_report",
+}
+
+with st.sidebar:
+    # Language
+    lang_name = st.selectbox(
+        t("language_label"),
+        list(LANGUAGES.keys()),
+        index=list(LANGUAGES.values()).index(st.session_state.get("lang", "en")),
+        key="_lang_selector",
+    )
+    st.session_state["lang"] = LANGUAGES[lang_name]
+
+    # Mode toggle
+    mode_choice = st.radio(
+        t("mode_label"),
+        [t("mode_expert"), t("mode_guided")],
+        horizontal=True,
+        key="_mode_radio",
+    )
+    st.session_state["app_mode"] = "guided" if mode_choice == t("mode_guided") else "expert"
+
+    st.divider()
+
+    # Save session
+    _save_data = {
+        k: (v.isoformat() if hasattr(v, "isoformat") else v)
+        for k, v in st.session_state.items()
+        if k not in _INTERNAL_KEYS and not k.startswith("_") and isinstance(v, (str, int, float, bool, list, type(None)))
+    }
+    st.download_button(
+        t("save_session_btn"),
+        data=json.dumps(_save_data, ensure_ascii=False, indent=2),
+        file_name="ep_session.json",
+        mime="application/json",
+        use_container_width=True,
+    )
+
+    # Load session
+    _uploaded_session = st.file_uploader(t("load_session_label"), type="json", key="_session_uploader")
+    if _uploaded_session:
+        _loaded = json.loads(_uploaded_session.read())
+        for _k, _v in _loaded.items():
+            st.session_state[_k] = _v
+        st.success(t("session_loaded"))
+        st.rerun()
+
+    st.divider()
+
+    # Summary panel
+    st.markdown(f"**{t('sidebar_summary_title')}**")
+    _e = t("sum_empty")
+    st.markdown(f"👤 **{t('sum_customer')}:** {st.session_state.get('customer_name') or _e}")
+    st.markdown(f"📦 **{t('sum_application')}:** {', '.join(st.session_state.get('application') or []) or _e}")
+    _ptype = st.session_state.get('pallet_type_1') or st.session_state.get('pallet_type') or _e
+    st.markdown(f"🪵 **{t('sum_pallet')}:** {_ptype}")
+    _wkg = st.session_state.get('load_weight_kg')
+    st.markdown(f"⚖️ **{t('sum_weight')}:** {f'{_wkg} kg' if _wkg else _e}")
+    _aisle = st.session_state.get('cross_docking_aisle') or st.session_state.get('aisle_width_m') or _e
+    st.markdown(f"↔️ **{t('sum_aisle')}:** {f'{_aisle} m' if _aisle != _e else _e}")
+    _flow = st.session_state.get('num_flow_steps')
+    st.markdown(f"🔄 **{t('sum_flow')}:** {f'{_flow} steps' if _flow else _e}")
+    _integ = st.session_state.get('integration_required') or _e
+    st.markdown(f"🔗 **{t('sum_integration')}:** {_integ}")
 
 col_logo, col_title = st.columns([1, 5])
 
@@ -219,37 +297,66 @@ with col_logo:
         st.image(LOGO_PATH, width=220)
 
 with col_title:
-    st.title("EP Equipment – Site Survey Dashboard")
+    st.title(t("app_title"))
 
-st.markdown("Interactive tool for customer interactions: Fill forms → Get recommendations → Generate reports")
+st.markdown(t("app_subtitle"))
 
-tab1, tab2, tab3, tab4 = st.tabs(
-    [
-        "1. Basic Information",
-        "2. Material Flow",
-        "3. Data Flow & Integration",
-        "4. Site Conditions & Safety",
-    ]
-)
+from header_tab import build_header_inputs
+from secondary_tab import build_material_flow_inputs
+from data_flow_tab import build_data_flow_inputs
+from site_conditions_tab import build_site_conditions_inputs
 
-with tab1:
-    from header_tab import build_header_inputs
-    header_data = build_header_inputs()
+_app_mode = st.session_state.get("app_mode", "expert")
 
-with tab2:
-    from secondary_tab import build_material_flow_inputs
-    material_flow_data = build_material_flow_inputs()
+if _app_mode == "guided":
+    # ── Guided step-by-step mode ──────────────────────────────────────────────
+    _steps = [t("tab1_label"), t("tab2_label"), t("tab3_label"), t("tab4_label")]
+    _step = st.session_state.get("guided_step", 0)
 
-with tab3:
-    from data_flow_tab import build_data_flow_inputs
-    data_flow_data = build_data_flow_inputs(
-        route_details=material_flow_data.get("route_details", []),
-        selected_apps=header_data.get("application", []),
+    # Progress bar
+    st.progress((_step + 1) / len(_steps))
+    _nav_l, _nav_m, _nav_r = st.columns([1, 4, 1])
+    with _nav_l:
+        if _step > 0 and st.button(t("btn_back"), use_container_width=True):
+            st.session_state["guided_step"] = _step - 1
+            st.rerun()
+    with _nav_m:
+        st.markdown(f"<center><b>{t('step_of', current=_step+1, total=len(_steps))}: {_steps[_step]}</b></center>", unsafe_allow_html=True)
+    with _nav_r:
+        if _step < len(_steps) - 1 and st.button(t("btn_next"), use_container_width=True):
+            st.session_state["guided_step"] = _step + 1
+            st.rerun()
+
+    # Render all 4 sections in expanders; only current is expanded
+    with st.expander(_steps[0], expanded=(_step == 0)):
+        header_data = build_header_inputs()
+    with st.expander(_steps[1], expanded=(_step == 1)):
+        material_flow_data = build_material_flow_inputs()
+    with st.expander(_steps[2], expanded=(_step == 2)):
+        data_flow_data = build_data_flow_inputs(
+            route_details=material_flow_data.get("route_details", []),
+            selected_apps=header_data.get("application", []),
+        )
+    with st.expander(_steps[3], expanded=(_step == 3)):
+        site_data = build_site_conditions_inputs()
+
+else:
+    # ── Expert tab mode (default) ─────────────────────────────────────────────
+    tab1, tab2, tab3, tab4 = st.tabs(
+        [t("tab1_label"), t("tab2_label"), t("tab3_label"), t("tab4_label")]
     )
 
-with tab4:
-    from site_conditions_tab import build_site_conditions_inputs
-    site_data = build_site_conditions_inputs()
+    with tab1:
+        header_data = build_header_inputs()
+    with tab2:
+        material_flow_data = build_material_flow_inputs()
+    with tab3:
+        data_flow_data = build_data_flow_inputs(
+            route_details=material_flow_data.get("route_details", []),
+            selected_apps=header_data.get("application", []),
+        )
+    with tab4:
+        site_data = build_site_conditions_inputs()
 
 all_data = {
     **header_data,
@@ -306,10 +413,10 @@ st.info(
     "the final solution must follow the standard requirement."
 )
 
-agree = st.checkbox("I agree to the statement above", key="agree_generate_report")
+agree = st.checkbox(t("agree_label"), key="agree_generate_report")
 temperature_blocked = all_data.get("temperature_range") == "Below 0°C"
 
-if st.button("Generate Report", type="primary", disabled=(not agree or temperature_blocked)):
+if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperature_blocked)):
     required_fields = ["customer_name", "customer_email", "customer_mobile", "application"]
     missing = [field for field in required_fields if not all_data.get(field)]
 

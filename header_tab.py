@@ -3,6 +3,7 @@ import math
 import streamlit as st
 from datetime import datetime
 from product_validators import validate_xpl201, validate_xqe122, validate_xna121_151
+from translations import t
 
 WIFI_CHECKLIST_PDF = "4.2_Requiements for the WiFI Checklist.pdf"
 WIFI_TESTING_PDF = "4.3_Wifi_Testing_Procedure.pdf"
@@ -22,13 +23,13 @@ def _parse_load_height_m(dimensions_text: str) -> float:
 
 def _build_pallet_block(index: int) -> dict:
     suffix = f"_{index}"
-    st.markdown(f"#### Pallet {index}")
+    st.markdown(f"#### {t('pallet_heading', n=index)}")
 
     pallet_type = st.radio(
-        f"Type of Pallet {index}",
+        t("pallet_type_label", n=index),
         ["Euro", "Industrial", "Other"],
         horizontal=True,
-        key=f"pallet_type{suffix}"
+        key=f"pallet_type{suffix}",
     )
 
     other_pallet_type = ""
@@ -36,35 +37,31 @@ def _build_pallet_block(index: int) -> dict:
 
     if pallet_type == "Other":
         other_pallet_type = st.text_input(
-            f"Specify pallet type {index}",
-            key=f"other_pallet_type{suffix}"
+            t("pallet_specify_label", n=index),
+            key=f"other_pallet_type{suffix}",
         )
-
         other_pallet_pickable = st.radio(
-            f"Can '{other_pallet_type if other_pallet_type else 'this pallet'}' be picked by a normal pallet truck?",
+            t("pallet_pickable_label"),
             ["Yes", "No"],
             horizontal=True,
-            key=f"other_pallet_pickable{suffix}"
+            key=f"other_pallet_pickable{suffix}",
         )
-
         if other_pallet_pickable == "No":
-            st.warning(
-                "Please contact our engineering team and confirm the pallet handling requirement before proceeding."
-            )
+            st.warning(t("pallet_pickable_warn"))
 
     load_dimensions = st.text_input(
-        f"Load Dimensions (L×W×H) [mm] {index}",
+        t("pallet_dimensions_label", n=index),
         value="",
         placeholder="Example: 1200×800×1500",
-        key=f"load_dimensions{suffix}"
+        key=f"load_dimensions{suffix}",
     )
 
     pallet_width_mm = st.number_input(
-        f"Insertion Depth (Fork Entry) [mm] {index}",
+        t("pallet_width_label", n=index),
         min_value=0,
         value=0,
         step=1,
-        key=f"pallet_width_mm{suffix}"
+        key=f"pallet_width_mm{suffix}",
     )
 
     return {
@@ -76,49 +73,87 @@ def _build_pallet_block(index: int) -> dict:
     }
 
 
+def _apply_smart_defaults(application: list):
+    """Pre-fill sensible defaults when an application is first selected."""
+    defaults_applied = False
+
+    if "Transport / Cross Docking" in application:
+        if st.session_state.get("cross_docking_aisle", 0) == 0:
+            st.session_state["cross_docking_aisle"] = 1.8
+            defaults_applied = True
+        if st.session_state.get("load_weight_kg", 0) == 0:
+            st.session_state["load_weight_kg"] = 1000
+            defaults_applied = True
+
+    if "Stacking/Conveyor" in application:
+        if st.session_state.get("load_weight_kg", 0) == 0:
+            st.session_state["load_weight_kg"] = 1000
+            defaults_applied = True
+        if st.session_state.get("max_stacking_height_m", 0.0) == 0.0:
+            st.session_state["max_stacking_height_m"] = 3.5
+            defaults_applied = True
+        if st.session_state.get("aisle_width_mm", 0) == 0:
+            st.session_state["aisle_width_mm"] = 2800
+            defaults_applied = True
+
+    if "Narrow Aisle" in application:
+        if st.session_state.get("load_weight_kg", 0) == 0:
+            st.session_state["load_weight_kg"] = 1000
+            defaults_applied = True
+        if st.session_state.get("aisle_width_m", 0.0) == 0.0:
+            st.session_state["aisle_width_m"] = 1.8
+            defaults_applied = True
+        if st.session_state.get("max_stacking_height_m", 0.0) == 0.0:
+            st.session_state["max_stacking_height_m"] = 6.0
+            defaults_applied = True
+
+    if defaults_applied:
+        st.info(t("smart_defaults_notice"))
+
+
 def build_header_inputs():
     st.subheader("1. Basic Information")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("**Customer Information**")
+        st.markdown(f"**{t('section_customer')}**")
         customer_name = st.text_input(
-            "Customer / Contact Name *",
-            placeholder="e.g. John Smith",
+            t("field_customer_name"),
+            placeholder=t("ph_customer_name"),
             key="customer_name",
         )
         customer_email = st.text_input(
-            "Customer Email Address *",
-            placeholder="e.g. john.smith@company.com",
+            t("field_customer_email"),
+            placeholder=t("ph_customer_email"),
             key="customer_email",
         )
         customer_mobile = st.text_input(
-            "Customer Phone / Mobile *",
-            placeholder="e.g. +49 123 456 7890",
+            t("field_customer_mobile"),
+            placeholder=t("ph_customer_mobile"),
             key="customer_mobile",
         )
 
     with col2:
-        st.markdown("**Project Information**")
+        st.markdown(f"**{t('section_project')}**")
         project_name = st.text_input(
-            "Project Name / Reference",
-            placeholder="e.g. Warehouse Automation Phase 1",
+            t("field_project_name"),
+            placeholder=t("ph_project_name"),
             key="project_name",
         )
         project_location = st.text_input(
-            "Project / Site Location",
-            placeholder="e.g. Munich, Germany",
+            t("field_project_location"),
+            placeholder=t("ph_project_location"),
             key="project_location",
         )
-        survey_date = st.date_input("Survey Date", datetime.today(), key="survey_date")
+        survey_date = st.date_input(t("field_survey_date"), datetime.today(), key="survey_date")
         warehouse_area = st.text_input(
-            "Warehouse / Workshop Area [sq m]",
-            placeholder="e.g. 5000",
+            t("field_warehouse_area"),
+            placeholder=t("ph_warehouse_area"),
             key="warehouse_area",
         )
 
-    add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
+    add_multiple_pallets = st.checkbox(t("add_multiple_pallets"), key="add_multiple_pallets")
 
     pallets = [_build_pallet_block(1)]
 
@@ -131,7 +166,7 @@ def build_header_inputs():
             step=1,
             key="num_additional_pallets"
         )
-        for i in range(2, num_additional + 2):
+        for i in range(2, int(num_additional) + 2):
             pallets.append(_build_pallet_block(i))
 
     primary_pallet = pallets[0] if pallets else {
@@ -142,19 +177,21 @@ def build_header_inputs():
         "pallet_width_mm": 0,
     }
 
-    st.markdown("### Application(s)")
+    st.markdown(f"### {t('section_application')}")
     application = st.multiselect(
-        "Select all that apply",
+        t("field_application"),
         ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle", "Other"],
-        key="application"
+        key="application",
     )
 
+    _apply_smart_defaults(application)
+
     task_description = st.text_area(
-        "Job-To-Do",
+        t("field_job_to_do"),
         height=120,
         key="task_description",
-        placeholder="Example: Inbound → Buffer Storage → Floor Storage → Production → Outbound",
-        help="Describe the operation flow in a simple sequence."
+        placeholder=t("ph_job_to_do"),
+        help="Describe the operation flow in a simple sequence.",
     )
 
     st.markdown("### Application-Specific Requirements")
@@ -411,6 +448,44 @@ def build_header_inputs():
             st.warning(msg)
         else:
             st.success(msg)
+
+    # ── Consolidated inline validation panel ─────────────────────────────────
+    if any(a in application for a in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
+        st.markdown(f"### {t('inline_val_title')}")
+        val_cols = st.columns(len([a for a in application if a in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]]) or 1)
+        col_idx = 0
+
+        if "Transport / Cross Docking" in application and cross_docking_aisle and load_weight_kg:
+            is_v, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg)
+            with val_cols[col_idx]:
+                if color == "green":
+                    st.success(f"**XPL201** ✅\n\n{msg}")
+                elif color == "orange":
+                    st.warning(f"**XPL201** ⚠️\n\n{msg}")
+                else:
+                    st.error(f"**XPL201** ❌\n\n{msg}")
+            col_idx += 1
+
+        if "Stacking/Conveyor" in application and load_weight_kg and max_stacking_height_m:
+            is_v, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, 320)
+            with val_cols[col_idx]:
+                if color == "green":
+                    st.success(f"**XQE122** ✅\n\n{msg}")
+                elif color == "orange":
+                    st.warning(f"**XQE122** ⚠️\n\n{msg}")
+                else:
+                    st.error(f"**XQE122** ❌\n\n{msg}")
+            col_idx += 1
+
+        if "Narrow Aisle" in application and xna_model and aisle_width_m and max_stacking_height_m:
+            is_v, msg, color = validate_xna121_151(aisle_width_m, load_weight_kg, max_stacking_height_m, xna_model)
+            with val_cols[col_idx]:
+                if color == "green":
+                    st.success(f"**{xna_model}** ✅\n\n{msg}")
+                elif color == "orange":
+                    st.warning(f"**{xna_model}** ⚠️\n\n{msg}")
+                else:
+                    st.error(f"**{xna_model}** ❌\n\n{msg}")
 
     st.markdown("### Operational Basics")
     col_op1, col_op2 = st.columns(2)
