@@ -82,15 +82,41 @@ def build_header_inputs():
     col1, col2 = st.columns(2)
 
     with col1:
-        customer_name = st.text_input("Customer Name *", key="customer_name")
-        customer_email = st.text_input("Customer Email *", key="customer_email")
-        customer_mobile = st.text_input("Customer Mobile Number *", key="customer_mobile")
-        project_name = st.text_input("Project Name", key="project_name")
-        project_location = st.text_input("Project Location", key="project_location")
-        warehouse_area = st.text_input("Warehouse / Workshop Area [sq m]", key="warehouse_area")
+        st.markdown("**Customer Information**")
+        customer_name = st.text_input(
+            "Customer / Contact Name *",
+            placeholder="e.g. John Smith",
+            key="customer_name",
+        )
+        customer_email = st.text_input(
+            "Customer Email Address *",
+            placeholder="e.g. john.smith@company.com",
+            key="customer_email",
+        )
+        customer_mobile = st.text_input(
+            "Customer Phone / Mobile *",
+            placeholder="e.g. +49 123 456 7890",
+            key="customer_mobile",
+        )
 
     with col2:
+        st.markdown("**Project Information**")
+        project_name = st.text_input(
+            "Project Name / Reference",
+            placeholder="e.g. Warehouse Automation Phase 1",
+            key="project_name",
+        )
+        project_location = st.text_input(
+            "Project / Site Location",
+            placeholder="e.g. Munich, Germany",
+            key="project_location",
+        )
         survey_date = st.date_input("Survey Date", datetime.today(), key="survey_date")
+        warehouse_area = st.text_input(
+            "Warehouse / Workshop Area [sq m]",
+            placeholder="e.g. 5000",
+            key="warehouse_area",
+        )
 
     add_multiple_pallets = st.checkbox("Add Multiple Pallets", key="add_multiple_pallets")
 

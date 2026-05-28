@@ -609,22 +609,14 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             if all_data.get("integration_required") == "Yes":
                 df_lines = []
                 if all_data.get("system_architecture_text"):
-                    df_lines.append(f"System architecture:\n{all_data.get('system_architecture_text')}")
+                    df_lines.append(all_data.get("system_architecture_text"))
                 if all_data.get("integration_route_text"):
-                    df_lines.append(f"Integration route: {all_data.get('integration_route_text')}")
-                if all_data.get("task_flow_text"):
-                    df_lines.append(f"Task flow:\n{all_data.get('task_flow_text')}")
-                if all_data.get("connected_systems_text"):
-                    df_lines.append(f"Connected systems:\n{all_data.get('connected_systems_text')}")
-                if all_data.get("status_feedback_text"):
-                    df_lines.append(f"Status feedback:\n{all_data.get('status_feedback_text')}")
-                if all_data.get("key_data_exchange_text"):
-                    df_lines.append(f"Key data exchanged:\n{all_data.get('key_data_exchange_text')}")
+                    df_lines.append(f"Data flow:\n{all_data.get('integration_route_text')}")
                 if all_data.get("connections_details"):
                     df_lines.append(all_data.get("connections_details"))
                 context["data_flow_display_text"] = "\n\n".join(df_lines)
             else:
-                context["data_flow_display_text"] = "No external system integration required."
+                context["data_flow_display_text"] = "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet"
 
             status_text.text("Calculating recommendations...")
             progress_bar.progress(25)
