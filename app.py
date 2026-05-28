@@ -338,8 +338,10 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                 context["other_pallet_type"] = primary_pallet.get("other_pallet_type", "")
                 context["other_pallet_pickable"] = primary_pallet.get("other_pallet_pickable", "")
                 context["load_dimensions"] = primary_pallet.get("load_dimensions", "")
-                context["pallet_width_mm"] = primary_pallet.get("pallet_width_mm", "")
+                raw_width = primary_pallet.get("pallet_width_mm", 0)
+                context["pallet_width_mm"] = raw_width if raw_width else ""
             else:
+                primary_pallet = {}
                 context["pallet_type"] = ""
                 context["other_pallet_type"] = ""
                 context["other_pallet_pickable"] = ""
@@ -352,7 +354,8 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
 
             context["cad_filename"] = cad_file.name if cad_file else ""
             context["conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
-            context["job_to_do"] = material_flow_data.get("job_to_do_flow", all_data.get("task_description", ""))
+            job_to_do_val = material_flow_data.get("job_to_do_flow") or all_data.get("task_description", "")
+            context["job_to_do"] = job_to_do_val
 
             if not all_data.get("clearance_required"):
                 context["clearance_height_m"] = ""
@@ -473,12 +476,8 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             context["xqe_xpl_xna_summary_text"] = "\n".join(summary_lines)
 
             integration_support_lines = []
-            if all_data.get("network_coverage"):
-                integration_support_lines.append(f"Network / RF coverage details: {all_data.get('network_coverage')}")
-            if all_data.get("battery_heating"):
-                integration_support_lines.append("Battery heating required for low-temperature operation: Yes")
             if all_data.get("data_flow_additional_notes"):
-                integration_support_lines.append(f"Additional positioning / support notes: {all_data.get('data_flow_additional_notes')}")
+                integration_support_lines.append(f"Additional integration / positioning notes: {all_data.get('data_flow_additional_notes')}")
             context["integration_support_text"] = "\n".join(integration_support_lines)
 
             context["ground_gaps_text"] = (
@@ -499,6 +498,7 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             context["status_feedback_text"] = all_data.get("status_feedback_text", "")
             context["key_data_exchange_text"] = all_data.get("key_data_exchange_text", "")
 
+            # ── pallets_summary ──────────────────────────────────────────
             if pallets:
                 pallet_lines = []
                 for idx, pallet in enumerate(pallets, start=1):
@@ -508,14 +508,123 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
                     parts = [f"Pallet {idx}: {pallet_label}"]
                     if pallet.get("load_dimensions"):
                         parts.append(f"Dimensions: {pallet.get('load_dimensions')}")
-                    if pallet.get("pallet_width_mm"):
-                        parts.append(f"Insertion Depth: {pallet.get('pallet_width_mm')} mm")
+                    raw_w = pallet.get("pallet_width_mm", 0)
+                    if raw_w:
+                        parts.append(f"Fork entry depth: {raw_w} mm")
                     if pallet.get("other_pallet_pickable"):
                         parts.append(f"Can be picked by normal pallet truck: {pallet.get('other_pallet_pickable')}")
                     pallet_lines.append(", ".join(parts))
                 context["pallets_summary"] = "\n".join(pallet_lines)
             else:
                 context["pallets_summary"] = ""
+
+            # ── pallet_display_text (single smart field for report cell) ──
+            pallet_lines_disp = []
+            ptype = primary_pallet.get("pallet_type", "")
+            if ptype:
+                pallet_lines_disp.append(f"Pallet type: {ptype}")
+            if ptype == "Other":
+                if primary_pallet.get("other_pallet_type"):
+                    pallet_lines_disp.append(f"Type description: {primary_pallet.get('other_pallet_type')}")
+                if primary_pallet.get("other_pallet_pickable"):
+                    pallet_lines_disp.append(f"Can be picked by normal pallet truck: {primary_pallet.get('other_pallet_pickable')}")
+            if primary_pallet.get("load_dimensions"):
+                pallet_lines_disp.append(f"Dimensions (L×W×H): {primary_pallet.get('load_dimensions')}")
+            raw_w = primary_pallet.get("pallet_width_mm", 0)
+            if raw_w:
+                pallet_lines_disp.append(f"Fork entry depth: {raw_w} mm")
+            if len(pallets) > 1:
+                pallet_lines_disp.append(f"All pallets:\n{context['pallets_summary']}")
+            context["pallet_display_text"] = "\n".join(pallet_lines_disp)
+
+            # ── wifi_info_text ────────────────────────────────────────────
+            wifi_lines = []
+            if all_data.get("site_wifi_available"):
+                wifi_lines.append(f"Wi-Fi available: {all_data.get('site_wifi_available')}")
+            if all_data.get("network_status"):
+                wifi_lines.append(f"Network status: {all_data.get('network_status')}")
+            if all_data.get("network_coverage"):
+                wifi_lines.append(f"Coverage details: {all_data.get('network_coverage')}")
+            context["wifi_info_text"] = "\n".join(wifi_lines)
+
+            # ── avg_transport_text ────────────────────────────────────────
+            avg_t = context.get("avg_transport_m", "")
+            context["avg_transport_text"] = f"{avg_t} m" if avg_t not in (None, "", 0, 0.0) else ""
+
+            # ── operational_text ──────────────────────────────────────────
+            op_lines = []
+            if all_data.get("shifts_per_day") not in (None, 0, ""):
+                op_lines.append(f"Shifts per day: {all_data.get('shifts_per_day')}")
+            if all_data.get("peak_hours") not in (None, 0, 0.0, ""):
+                op_lines.append(f"Hours per shift: {all_data.get('peak_hours')}")
+            if operational_metrics["pallets_per_hour"]:
+                op_lines.append(f"Pallets per hour:\n{operational_metrics['pallets_per_hour']}")
+            context["operational_text"] = "\n".join(op_lines)
+
+            # ── material_flow_display_text ────────────────────────────────
+            mf_lines = []
+            if all_data.get("flow_steps") or material_flow_data.get("flow_steps"):
+                mf_lines.append(f"Flow sequence: {material_flow_data.get('flow_steps', '')}")
+            if material_flow_data.get("step_details_text"):
+                mf_lines.append(f"Step details:\n{material_flow_data.get('step_details_text')}")
+            if material_flow_data.get("material_flow_text"):
+                mf_lines.append(f"Process description:\n{material_flow_data.get('material_flow_text')}")
+            if all_data.get("special_comments"):
+                mf_lines.append(f"Notes:\n{all_data.get('special_comments')}")
+            context["material_flow_display_text"] = "\n".join(mf_lines)
+
+            # ── cad_info_text ─────────────────────────────────────────────
+            cad_lines = []
+            if cad_file:
+                cad_lines.append(f"CAD / layout file attached: {cad_file.name}")
+            if conveyor_picture:
+                cad_lines.append(f"Conveyor picture attached: {conveyor_picture.name}")
+            context["cad_info_text"] = "\n".join(cad_lines)
+
+            # ── charging_parking_text ─────────────────────────────────────
+            cp_lines = []
+            if all_data.get("charging_status"):
+                cp_lines.append(f"Charging area: {all_data.get('charging_status')}")
+            if all_data.get("parking_area"):
+                cp_lines.append(f"Parking / rest area: {all_data.get('parking_area')}")
+            context["charging_parking_text"] = "\n".join(cp_lines)
+
+            # ── special_info_text ─────────────────────────────────────────
+            si_lines = []
+            if all_data.get("special_demand"):
+                si_lines.append(all_data.get("special_demand"))
+            if all_data.get("special_comments"):
+                si_lines.append(f"Additional notes: {all_data.get('special_comments')}")
+            context["special_info_text"] = "\n".join(si_lines)
+
+            # ── job_to_do_text ────────────────────────────────────────────
+            jd_lines = []
+            if selected_apps:
+                jd_lines.append(f"Application(s): {', '.join(selected_apps)}")
+            if job_to_do_val:
+                jd_lines.append(f"Job-To-Do: {job_to_do_val}")
+            context["job_to_do_text"] = "\n".join(jd_lines)
+
+            # ── data_flow_display_text ────────────────────────────────────
+            if all_data.get("integration_required") == "Yes":
+                df_lines = []
+                if all_data.get("system_architecture_text"):
+                    df_lines.append(f"System architecture:\n{all_data.get('system_architecture_text')}")
+                if all_data.get("integration_route_text"):
+                    df_lines.append(f"Integration route: {all_data.get('integration_route_text')}")
+                if all_data.get("task_flow_text"):
+                    df_lines.append(f"Task flow:\n{all_data.get('task_flow_text')}")
+                if all_data.get("connected_systems_text"):
+                    df_lines.append(f"Connected systems:\n{all_data.get('connected_systems_text')}")
+                if all_data.get("status_feedback_text"):
+                    df_lines.append(f"Status feedback:\n{all_data.get('status_feedback_text')}")
+                if all_data.get("key_data_exchange_text"):
+                    df_lines.append(f"Key data exchanged:\n{all_data.get('key_data_exchange_text')}")
+                if all_data.get("connections_details"):
+                    df_lines.append(all_data.get("connections_details"))
+                context["data_flow_display_text"] = "\n\n".join(df_lines)
+            else:
+                context["data_flow_display_text"] = "No external system integration required."
 
             status_text.text("Calculating recommendations...")
             progress_bar.progress(25)
@@ -574,6 +683,22 @@ if st.button("Generate Report", type="primary", disabled=(not agree or temperatu
             context["recommendation"] = "\n\n".join(recommendations) if recommendations else ""
             context["fleet_recommendation"] = "\n".join(fleet_estimates) if fleet_estimates else ""
             context["validation_summary"] = "\n".join(validation_summary) if validation_summary else ""
+
+            # Per-product texts for Word report product table
+            xqe_rec_parts = [r for r in recommendations if "XQE" in r]
+            xqe_rec_parts += [e for e in fleet_estimates if "XQE" in e]
+            xqe_rec_parts += [v.split(": ", 1)[-1].rsplit(" (", 1)[0] for v in validation_summary if "XQE" in v]
+            context["recommendation_text"] = "\n".join(xqe_rec_parts) if xqe_rec_parts else ""
+
+            xpl_rec_parts = [r for r in recommendations if "XPL" in r]
+            xpl_rec_parts += [e for e in fleet_estimates if "XPL" in e]
+            xpl_rec_parts += [v.split(": ", 1)[-1].rsplit(" (", 1)[0] for v in validation_summary if "XPL" in v]
+            context["xpl_recommendation"] = "\n".join(xpl_rec_parts) if xpl_rec_parts else ""
+
+            if all_data.get("ep_wms_used") == "Yes":
+                context["dasp_info"] = "EP WMS / DAS included as coordination layer above EP USP Fleet Manager."
+            else:
+                context["dasp_info"] = ""
 
             status_text.text("Generating Word report...")
             progress_bar.progress(50)
