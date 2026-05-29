@@ -32,14 +32,14 @@ def find_existing_file(candidates):
 
 
 def build_feedback_text(feedback_data: dict) -> str:
-    return f'''EP Equipment Site Survey Feedback
+    return f"""EP Equipment Site Survey Feedback
 
-Overall experience: {feedback_data.get("experience", "")}
-Were any important questions missing?: {feedback_data.get("missing_questions", "")}
-What should we improve?: {feedback_data.get("improvements", "")}
-Would you like EP team to contact you?: {feedback_data.get("contact_needed", "")}
-Additional comments: {feedback_data.get("comments", "")}
-'''
+Overall experience: {feedback_data.get('experience', '')}
+Were any important questions missing?: {feedback_data.get('missing_questions', '')}
+What should we improve?: {feedback_data.get('improvements', '')}
+Would you like EP team to contact you?: {feedback_data.get('contact_needed', '')}
+Additional comments: {feedback_data.get('comments', '')}
+"""
 
 
 @st.dialog("Help us improve")
@@ -156,6 +156,91 @@ def _to_float(value):
         return 0.0
 
 
+def _is_forbidden_session_key(key: str) -> bool:
+    forbidden_prefixes = [
+        "download_",
+        "route_source_image_",
+        "route_layout_",
+    ]
+    forbidden_exact = {
+        "_session_uploader",
+        "cad_layout_file",
+        "conveyor_picture",
+        "cad_file",
+    }
+
+    if key in forbidden_exact:
+        return True
+
+    for prefix in forbidden_prefixes:
+        if key.startswith(prefix):
+            return True
+
+    return False
+
+
+def normalize_loaded_session(data: dict) -> dict:
+    normalized = {}
+
+    for k, v in (data or {}).items():
+        if _is_forbidden_session_key(k):
+            continue
+        normalized[k] = v
+
+    flow_steps = []
+    for i in range(1, 10):
+        step_value = normalized.get(f"flow_step_{i}")
+        if step_value:
+            flow_steps.append(step_value)
+
+    if flow_steps:
+        normalized["flow_sequence"] = flow_steps
+        normalized["flow_steps"] = flow_steps
+        normalized["num_flow_steps"] = len(flow_steps)
+
+    if normalized.get("pallet_type_1") and not normalized.get("pallet_type"):
+        normalized["pallet_type"] = normalized.get("pallet_type_1")
+
+    if normalized.get("load_dimensions_1") and not normalized.get("load_dimensions"):
+        normalized["load_dimensions"] = normalized.get("load_dimensions_1")
+
+    if normalized.get("pallet_width_mm_1") and not normalized.get("pallet_width_mm"):
+        normalized["pallet_width_mm"] = normalized.get("pallet_width_mm_1")
+
+    if normalized.get("other_pallet_type_1") and not normalized.get("other_pallet_type"):
+        normalized["other_pallet_type"] = normalized.get("other_pallet_type_1")
+
+    if normalized.get("other_pallet_pickable_1") and not normalized.get("other_pallet_pickable"):
+        normalized["other_pallet_pickable"] = normalized.get("other_pallet_pickable_1")
+
+    if normalized.get("num_flow_steps") and not normalized.get("route_count"):
+        normalized["route_count"] = normalized.get("num_flow_steps")
+
+    return normalized
+
+
+def rebuild_route_details_from_session():
+    route_count = int(st.session_state.get("num_flow_steps", 0) or 0)
+    route_details = []
+
+    for i in range(max(route_count - 1, 0)):
+        src = st.session_state.get(f"flow_step_{i+1}", "")
+        dst = st.session_state.get(f"flow_step_{i+2}", "")
+        if not (src and dst):
+            continue
+
+        route_details.append({
+            "from": src,
+            "to": dst,
+            "pallets_per_hour": st.session_state.get(f"route_pallets_per_hour_{i}", 0),
+            "avg_distance_m": st.session_state.get(f"route_avg_distance_{i}", 0.0),
+            "flow_type": st.session_state.get(f"route_flow_type_{i}", "Simultaneous / continuous"),
+        })
+
+    if route_details:
+        st.session_state["route_details"] = route_details
+
+
 def _build_operational_metrics(route_details):
     process_lines = []
     notes = []
@@ -201,9 +286,6 @@ for key, default in {
     "generated_report_buffer": None,
     "generated_safe_name": "customer",
     "generated_timestamp": "",
-    "generated_cad_file": None,
-    "generated_conveyor_picture": None,
-    "generated_photos": [],
     "generated_feedback": None,
     "feedback_saved": False,
     "feedback_popup_done": False,
@@ -217,11 +299,9 @@ for key, default in {
     if key not in st.session_state:
         st.session_state[key] = default
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
 _INTERNAL_KEYS = {
     "report_ready", "generated_report_buffer", "generated_safe_name",
-    "generated_timestamp", "generated_cad_file", "generated_conveyor_picture",
-    "generated_photos", "generated_feedback", "feedback_saved",
+    "generated_timestamp", "generated_feedback", "feedback_saved",
     "feedback_popup_done", "feedback_popup_open", "auto_zip_download_done",
     "zip_popup_open", "lang", "app_mode", "guided_step",
     "feedback_experience", "feedback_missing_questions", "feedback_improvements",
@@ -229,7 +309,6 @@ _INTERNAL_KEYS = {
 }
 
 with st.sidebar:
-    # Language
     lang_name = st.selectbox(
         t("language_label"),
         list(LANGUAGES.keys()),
@@ -238,7 +317,6 @@ with st.sidebar:
     )
     st.session_state["lang"] = LANGUAGES[lang_name]
 
-    # Mode toggle
     mode_choice = st.radio(
         t("mode_label"),
         [t("mode_expert"), t("mode_guided")],
@@ -249,12 +327,15 @@ with st.sidebar:
 
     st.divider()
 
-    # Save session
     _save_data = {
         k: (v.isoformat() if hasattr(v, "isoformat") else v)
         for k, v in st.session_state.items()
-        if k not in _INTERNAL_KEYS and not k.startswith("_") and isinstance(v, (str, int, float, bool, list, type(None)))
+        if k not in _INTERNAL_KEYS
+        and not k.startswith("_")
+        and not _is_forbidden_session_key(k)
+        and isinstance(v, (str, int, float, bool, list, type(None)))
     }
+
     st.download_button(
         t("save_session_btn"),
         data=json.dumps(_save_data, ensure_ascii=False, indent=2),
@@ -263,18 +344,29 @@ with st.sidebar:
         use_container_width=True,
     )
 
-    # Load session
-    _uploaded_session = st.file_uploader(t("load_session_label"), type="json", key="_session_uploader")
-    if _uploaded_session:
-        _loaded = json.loads(_uploaded_session.read())
-        for _k, _v in _loaded.items():
-            st.session_state[_k] = _v
-        st.success(t("session_loaded"))
-        st.rerun()
+    _uploaded_session = st.file_uploader(
+        t("load_session_label"),
+        type="json",
+        key="_session_uploader",
+    )
+    if _uploaded_session is not None:
+        if st.button("Load Session Now", use_container_width=True, key="load_session_btn"):
+            try:
+                _loaded = json.loads(_uploaded_session.getvalue().decode("utf-8"))
+                _loaded = normalize_loaded_session(_loaded)
+
+                for _k, _v in _loaded.items():
+                    st.session_state[_k] = _v
+
+                rebuild_route_details_from_session()
+                st.success(t("session_loaded"))
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"Failed to load session file: {e}")
 
     st.divider()
 
-    # Summary panel
     st.markdown(f"**{t('sidebar_summary_title')}**")
     _e = t("sum_empty")
     st.markdown(f"👤 **{t('sum_customer')}:** {st.session_state.get('customer_name') or _e}")
@@ -309,11 +401,9 @@ from site_conditions_tab import build_site_conditions_inputs
 _app_mode = st.session_state.get("app_mode", "expert")
 
 if _app_mode == "guided":
-    # ── Guided step-by-step mode ──────────────────────────────────────────────
     _steps = [t("tab1_label"), t("tab2_label"), t("tab3_label"), t("tab4_label")]
     _step = st.session_state.get("guided_step", 0)
 
-    # Progress bar
     st.progress((_step + 1) / len(_steps))
     _nav_l, _nav_m, _nav_r = st.columns([1, 4, 1])
     with _nav_l:
@@ -327,7 +417,6 @@ if _app_mode == "guided":
             st.session_state["guided_step"] = _step + 1
             st.rerun()
 
-    # Render all 4 sections in expanders; only current is expanded
     with st.expander(_steps[0], expanded=(_step == 0)):
         header_data = build_header_inputs()
     with st.expander(_steps[1], expanded=(_step == 1)):
@@ -341,7 +430,6 @@ if _app_mode == "guided":
         site_data = build_site_conditions_inputs()
 
 else:
-    # ── Expert tab mode (default) ─────────────────────────────────────────────
     tab1, tab2, tab3, tab4 = st.tabs(
         [t("tab1_label"), t("tab2_label"), t("tab3_label"), t("tab4_label")]
     )
@@ -387,7 +475,7 @@ with col_pdf1:
         with open(xqe_pdf_path, "rb") as pdf_file:
             st.download_button(
                 label="Download Full XQE PDF",
-                data=pdf_file,
+                data=pdf_file.read(),
                 file_name=os.path.basename(xqe_pdf_path),
                 mime="application/pdf",
             )
@@ -400,7 +488,7 @@ with col_pdf2:
         with open(xpl_pdf_path, "rb") as pdf_file:
             st.download_button(
                 label="Download Full XPL PDF",
-                data=pdf_file,
+                data=pdf_file.read(),
                 file_name=os.path.basename(xpl_pdf_path),
                 mime="application/pdf",
             )
@@ -605,7 +693,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             context["status_feedback_text"] = all_data.get("status_feedback_text", "")
             context["key_data_exchange_text"] = all_data.get("key_data_exchange_text", "")
 
-            # ── pallets_summary ──────────────────────────────────────────
             if pallets:
                 pallet_lines = []
                 for idx, pallet in enumerate(pallets, start=1):
@@ -617,7 +704,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                         parts.append(f"Dimensions: {pallet.get('load_dimensions')}")
                     raw_w = pallet.get("pallet_width_mm", 0)
                     if raw_w:
-                        parts.append(f"Fork entry depth: {raw_w} mm")
+                        parts.append(f"Fork entry/depth: {raw_w} mm")
                     if pallet.get("other_pallet_pickable"):
                         parts.append(f"Can be picked by normal pallet truck: {pallet.get('other_pallet_pickable')}")
                     pallet_lines.append(", ".join(parts))
@@ -625,7 +712,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             else:
                 context["pallets_summary"] = ""
 
-            # ── pallet_display_text (single smart field for report cell) ──
             pallet_lines_disp = []
             ptype = primary_pallet.get("pallet_type", "")
             if ptype:
@@ -639,12 +725,11 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 pallet_lines_disp.append(f"Dimensions (L×W×H): {primary_pallet.get('load_dimensions')}")
             raw_w = primary_pallet.get("pallet_width_mm", 0)
             if raw_w:
-                pallet_lines_disp.append(f"Fork entry depth: {raw_w} mm")
+                pallet_lines_disp.append(f"Fork entry/depth: {raw_w} mm")
             if len(pallets) > 1:
                 pallet_lines_disp.append(f"All pallets:\n{context['pallets_summary']}")
             context["pallet_display_text"] = "\n".join(pallet_lines_disp)
 
-            # ── wifi_info_text ────────────────────────────────────────────
             wifi_lines = []
             if all_data.get("site_wifi_available"):
                 wifi_lines.append(f"Wi-Fi available: {all_data.get('site_wifi_available')}")
@@ -654,11 +739,9 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 wifi_lines.append(f"Coverage details: {all_data.get('network_coverage')}")
             context["wifi_info_text"] = "\n".join(wifi_lines)
 
-            # ── avg_transport_text ────────────────────────────────────────
             avg_t = context.get("avg_transport_m", "")
             context["avg_transport_text"] = f"{avg_t} m" if avg_t not in (None, "", 0, 0.0) else ""
 
-            # ── operational_text ──────────────────────────────────────────
             op_lines = []
             if all_data.get("shifts_per_day") not in (None, 0, ""):
                 op_lines.append(f"Shifts per day: {all_data.get('shifts_per_day')}")
@@ -668,7 +751,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 op_lines.append(f"Pallets per hour:\n{operational_metrics['pallets_per_hour']}")
             context["operational_text"] = "\n".join(op_lines)
 
-            # ── material_flow_display_text ────────────────────────────────
             mf_lines = []
             if all_data.get("flow_steps") or material_flow_data.get("flow_steps"):
                 mf_lines.append(f"Flow sequence: {material_flow_data.get('flow_steps', '')}")
@@ -680,7 +762,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 mf_lines.append(f"Notes:\n{all_data.get('special_comments')}")
             context["material_flow_display_text"] = "\n".join(mf_lines)
 
-            # ── cad_info_text ─────────────────────────────────────────────
             cad_lines = []
             if cad_file:
                 cad_lines.append(f"CAD / layout file attached: {cad_file.name}")
@@ -688,7 +769,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 cad_lines.append(f"Conveyor picture attached: {conveyor_picture.name}")
             context["cad_info_text"] = "\n".join(cad_lines)
 
-            # ── charging_parking_text ─────────────────────────────────────
             cp_lines = []
             if all_data.get("charging_status"):
                 cp_lines.append(f"Charging area: {all_data.get('charging_status')}")
@@ -696,7 +776,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 cp_lines.append(f"Parking / rest area: {all_data.get('parking_area')}")
             context["charging_parking_text"] = "\n".join(cp_lines)
 
-            # ── special_info_text ─────────────────────────────────────────
             si_lines = []
             if all_data.get("special_demand"):
                 si_lines.append(all_data.get("special_demand"))
@@ -704,7 +783,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 si_lines.append(f"Additional notes: {all_data.get('special_comments')}")
             context["special_info_text"] = "\n".join(si_lines)
 
-            # ── job_to_do_text ────────────────────────────────────────────
             jd_lines = []
             if selected_apps:
                 jd_lines.append(f"Application(s): {', '.join(selected_apps)}")
@@ -712,7 +790,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 jd_lines.append(f"Job-To-Do: {job_to_do_val}")
             context["job_to_do_text"] = "\n".join(jd_lines)
 
-            # ── data_flow_display_text ────────────────────────────────────
             if all_data.get("integration_required") == "Yes":
                 df_lines = []
                 if all_data.get("system_architecture_text"):
@@ -783,7 +860,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             context["fleet_recommendation"] = "\n".join(fleet_estimates) if fleet_estimates else ""
             context["validation_summary"] = "\n".join(validation_summary) if validation_summary else ""
 
-            # Per-product texts for Word report product table
             xqe_rec_parts = [r for r in recommendations if "XQE" in r]
             xqe_rec_parts += [e for e in fleet_estimates if "XQE" in e]
             xqe_rec_parts += [v.split(": ", 1)[-1].rsplit(" (", 1)[0] for v in validation_summary if "XQE" in v]
@@ -816,9 +892,20 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             safe_name = all_data.get("customer_name", "customer").strip().replace(" ", "_").lower()
 
             st.session_state["generated_report_buffer"] = report_buffer.getvalue()
-            st.session_state["generated_cad_file"] = cad_file
-            st.session_state["generated_conveyor_picture"] = conveyor_picture
-            st.session_state["generated_photos"] = photos
+            st.session_state["generated_cad_file_bytes"] = cad_file.getvalue() if cad_file else None
+            st.session_state["generated_cad_file_name"] = cad_file.name if cad_file else ""
+
+            st.session_state["generated_conveyor_picture_bytes"] = conveyor_picture.getvalue() if conveyor_picture else None
+            st.session_state["generated_conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
+
+            generated_photos = []
+            for photo in photos:
+                if photo:
+                    generated_photos.append({
+                        "name": photo.name,
+                        "bytes": photo.getvalue(),
+                    })
+            st.session_state["generated_photos"] = generated_photos
             st.session_state["generated_safe_name"] = safe_name
             st.session_state["generated_timestamp"] = timestamp
             st.session_state["generated_feedback"] = None
@@ -861,8 +948,12 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
 
 if st.session_state.get("report_ready") and st.session_state.get("feedback_popup_done"):
     report_bytes = st.session_state.get("generated_report_buffer")
-    cad_file = st.session_state.get("generated_cad_file")
-    conveyor_picture = st.session_state.get("generated_conveyor_picture")
+    cad_file_bytes = st.session_state.get("generated_cad_file_bytes")
+    cad_file_name = st.session_state.get("generated_cad_file_name", "")
+
+    conveyor_picture_bytes = st.session_state.get("generated_conveyor_picture_bytes")
+    conveyor_picture_name = st.session_state.get("generated_conveyor_picture_name", "")
+
     photos = st.session_state.get("generated_photos", [])
     safe_name = st.session_state.get("generated_safe_name", "customer")
     timestamp = st.session_state.get("generated_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
@@ -877,16 +968,15 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
             zip_file.writestr(docx_filename, report_bytes)
 
         for i, photo in enumerate(photos):
-            if photo:
-                ext = photo.name.split(".")[-1] if "." in photo.name else "png"
-                zip_file.writestr(f"material_flow_photo_{i + 1}.{ext}", photo.getbuffer())
+            if photo and photo.get("bytes"):
+                original_name = photo.get("name", f"material_flow_photo_{i+1}.png")
+                zip_file.writestr(original_name, photo["bytes"])
 
-        if conveyor_picture:
-            ext = conveyor_picture.name.split(".")[-1] if "." in conveyor_picture.name else "png"
-            zip_file.writestr(f"conveyor_picture.{ext}", conveyor_picture.getbuffer())
+        if conveyor_picture_bytes and conveyor_picture_name:
+            zip_file.writestr(conveyor_picture_name, conveyor_picture_bytes)
 
-        if cad_file:
-            zip_file.writestr(cad_file.name, cad_file.getbuffer())
+        if cad_file_bytes and cad_file_name:
+            zip_file.writestr(cad_file_name, cad_file_bytes)
 
         if feedback_data:
             zip_file.writestr("feedback.txt", build_feedback_text(feedback_data))

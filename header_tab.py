@@ -242,8 +242,8 @@ def build_header_inputs():
 
         cross_docking_aisle = st.number_input(
             "Aisle Width in Operation Zone [m]",
-            min_value=0.0,
-            value=0.0,
+            min_value=1.8,
+            value=max(1.8, float(st.session_state.get("cross_docking_aisle", 1.8) or 1.8)),
             step=0.1,
             key="cross_docking_aisle"
         )
@@ -449,7 +449,6 @@ def build_header_inputs():
         else:
             st.success(msg)
 
-    # ── Consolidated inline validation panel ─────────────────────────────────
     if any(a in application for a in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]):
         st.markdown(f"### {t('inline_val_title')}")
         val_cols = st.columns(len([a for a in application if a in ["Transport / Cross Docking", "Stacking/Conveyor", "Narrow Aisle"]]) or 1)
@@ -548,23 +547,25 @@ def build_header_inputs():
                 if os.path.exists(WIFI_CHECKLIST_PDF):
                     with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
                         st.download_button(
-                            "Download WiFi Checklist",
-                            pdf_file,
-                            WIFI_CHECKLIST_PDF,
-                            "application/pdf",
-                            key="download_wifi_checklist"
+                            label="Download WiFi Checklist",
+                            data=pdf_file.read(),
+                            file_name=os.path.basename(WIFI_CHECKLIST_PDF),
+                            mime="application/pdf",
                         )
+                else:
+                    st.info("WiFi checklist PDF not found.")
 
             with wifi_col2:
                 if os.path.exists(WIFI_TESTING_PDF):
                     with open(WIFI_TESTING_PDF, "rb") as pdf_file:
                         st.download_button(
-                            "Download WiFi Testing Procedure",
-                            pdf_file,
-                            WIFI_TESTING_PDF,
-                            "application/pdf",
-                            key="download_wifi_testing_procedure"
+                            label="Download WiFi Testing Procedure",
+                            data=pdf_file.read(),
+                            file_name=os.path.basename(WIFI_TESTING_PDF),
+                            mime="application/pdf",
                         )
+                else:
+                    st.info("WiFi testing procedure PDF not found.")
 
             network_status = st.text_area(
                 "Site Network Status / WiFi Coverage",
@@ -578,12 +579,13 @@ def build_header_inputs():
             if os.path.exists(WIFI_CHECKLIST_PDF):
                 with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
                     st.download_button(
-                        "Download WiFi Checklist",
-                        pdf_file,
-                        WIFI_CHECKLIST_PDF,
-                        "application/pdf",
-                        key="download_wifi_checklist_no_wifi"
+                        label="Download WiFi Checklist",
+                        data=pdf_file.read(),
+                        file_name=os.path.basename(WIFI_CHECKLIST_PDF),
+                        mime="application/pdf",
                     )
+            else:
+                st.info("WiFi checklist PDF not found.")
 
             network_status = st.text_area(
                 "Site Network Status / WiFi Coverage",
