@@ -230,7 +230,9 @@ def build_header_inputs():
 
         if primary_pallet["pallet_type"] == "Euro" and load_weight_kg > 1500:
             st.warning(
-                "Euro pallet cannot bear more than 1500 kg. Please select 'Other' and specify the correct pallet type and dimensions."
+                f"⚠️ XPL201 can carry up to 2000 kg, but a standard Euro pallet is only structurally rated for ~1500 kg under dynamic load. "
+                f"Current: {load_weight_kg} kg on Euro pallet. "
+                "Use an Industrial or custom pallet for loads above 1500 kg, or confirm the actual pallet rating with your supplier."
             )
 
     if "Transport / Cross Docking" in application:
@@ -319,28 +321,43 @@ def build_header_inputs():
             )
 
             box_distance_mm = st.number_input(
-                "Distance Between 2 Pallets [mm]",
+                "Gap Between Pallets / Boxes [mm] (all directions)",
                 min_value=0,
                 value=0,
                 step=1,
-                key="floor_box_distance_mm"
+                key="floor_box_distance_mm",
+                help="XQE requires minimum 200 mm clearance between pallets/boxes in ALL directions — front, back, left, right.",
             )
 
             if box_distance_mm and box_distance_mm < 200:
-                st.error("Minimum distance between 2 pallets for floor stacking is 200 mm.")
+                st.error(
+                    "❌ Minimum gap between pallets/boxes for XQE floor stacking is 200 mm in ALL directions "
+                    "(front, back, left, right). Current: {} mm.".format(box_distance_mm)
+                )
+            elif box_distance_mm:
+                st.success("✅ Gap between pallets OK ({} mm ≥ 200 mm in all directions).".format(box_distance_mm))
 
             aisle_width_mm = st.number_input(
-                "Floor Storage Aisle Width [mm]",
+                "Floor Storage Channel / Aisle Width [mm]",
                 min_value=0,
                 value=0,
                 step=1,
-                key="floor_aisle_width_mm"
+                key="floor_aisle_width_mm",
+                help="XQE truck body is 1240 mm wide. Add 200 mm clearance on each side = 1640 mm minimum channel. Overall aisle for XQE operation: minimum 2900 mm.",
             )
 
             if aisle_width_mm and aisle_width_mm < 1640:
-                st.error("Minimum aisle width for floor stacking is 1640 mm.")
+                st.error(
+                    f"❌ Minimum channel width for XQE floor stacking is 1640 mm "
+                    f"(truck body 1240 mm + 200 mm clearance each side). Current: {aisle_width_mm} mm."
+                )
+            elif aisle_width_mm and aisle_width_mm < 2900:
+                st.warning(
+                    f"⚠️ Channel width {aisle_width_mm} mm is above minimum (1640 mm) but below recommended "
+                    f"XQE operating aisle of 2900 mm. Verify layout with engineering."
+                )
             elif aisle_width_mm:
-                st.info("The more the available aisle space, the faster and smoother the process.")
+                st.success(f"✅ Aisle width OK ({aisle_width_mm} mm ≥ 2900 mm).")
 
         elif stacking_type == "Rack Stacking":
             storage_locations = st.text_area(
@@ -350,28 +367,36 @@ def build_header_inputs():
             )
 
             box_distance_mm = st.number_input(
-                "Distance Between Pallets Stacked in Racks [mm]",
+                "Gap Between Pallets on Shelf [mm]",
                 min_value=0,
                 value=0,
                 step=1,
-                key="rack_box_distance_mm"
+                key="rack_box_distance_mm",
+                help="Standard minimum gap between two pallets in a rack shelf is 75 mm.",
             )
 
             if box_distance_mm and box_distance_mm < 75:
-                st.error("Minimum distance between pallets stacked in racks is 75 mm.")
+                st.error(
+                    f"❌ Minimum gap between pallets on a rack shelf is 75 mm (standard). Current: {box_distance_mm} mm."
+                )
+            elif box_distance_mm:
+                st.success(f"✅ Rack shelf gap OK ({box_distance_mm} mm ≥ 75 mm).")
 
             aisle_width_mm = st.number_input(
-                "Rack Stacking Aisle Width (Pallet to Pallet) [mm]",
+                "Rack Aisle Width (pallet face to pallet face) [mm]",
                 min_value=0,
                 value=0,
                 step=1,
-                key="rack_aisle_width_mm"
+                key="rack_aisle_width_mm",
+                help="Minimum 2900 mm for XQE rack operation (overall aisle). Minimum 2840 mm pallet-to-pallet face.",
             )
 
             if aisle_width_mm and aisle_width_mm < 2840:
-                st.error("Minimum rack stacking aisle width is 2840 mm pallet-to-pallet.")
+                st.error(f"❌ Minimum rack aisle width is 2840 mm (pallet face to pallet face). Current: {aisle_width_mm} mm.")
+            elif aisle_width_mm and aisle_width_mm < 2900:
+                st.warning(f"⚠️ Rack aisle {aisle_width_mm} mm is above 2840 mm but below recommended 2900 mm XQE operating aisle.")
             elif aisle_width_mm:
-                st.info("The more the available aisle space, the faster the process.")
+                st.success(f"✅ Rack aisle width OK ({aisle_width_mm} mm).")
 
     if "Narrow Aisle" in application:
         st.info("Narrow Aisle (XNA121 / XNA151): recommended aisle width 1.78–2.0 m")
@@ -455,7 +480,7 @@ def build_header_inputs():
         col_idx = 0
 
         if "Transport / Cross Docking" in application and cross_docking_aisle and load_weight_kg:
-            is_v, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg)
+            is_v, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg, primary_pallet.get("pallet_type", ""))
             with val_cols[col_idx]:
                 if color == "green":
                     st.success(f"**XPL201** ✅\n\n{msg}")
@@ -466,7 +491,7 @@ def build_header_inputs():
             col_idx += 1
 
         if "Stacking/Conveyor" in application and load_weight_kg and max_stacking_height_m:
-            is_v, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, 320)
+            is_v, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, aisle_width_mm)
             with val_cols[col_idx]:
                 if color == "green":
                     st.success(f"**XQE122** ✅\n\n{msg}")

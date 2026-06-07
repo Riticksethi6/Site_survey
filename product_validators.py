@@ -1,101 +1,142 @@
-# product_validators.py – Final version aligned with all XPL & XQE PDFs (March 2026)
+# product_validators.py – Validated against EP XPL & XQE Layout Planning Specifications
 
-def validate_xpl201(aisle_width_m, load_weight_kg):
+def validate_xpl201(aisle_width_m, load_weight_kg, pallet_type=""):
     """
-    Validation for XPL201 (Transport / Cross Docking).
-    Uses the lowest minimum from your PDFs (1.5 m one-way driving), but explains full range.
-    No stacking height check (floor-level only).
+    XPL201 (Transport / Cross Docking).
+    Vehicle capacity: 2000 kg.
+    Euro pallet structural limit: ~1500 kg (dynamic load).
+    Minimum aisle: 1.5 m one-way driving.
     """
     issues = []
+    color = "green"
 
-    # Aisle width check – 1.5 m is the absolute minimum from one PDF version
-    if aisle_width_m < 1.5:
+    # Pallet structural limit — separate from vehicle capacity
+    if pallet_type == "Euro" and load_weight_kg > 1500:
         issues.append(
-            f"Minimum aisle width for XPL201 (one-way driving) is 1.5 m according to the XPL Layout and Aisle Planning Specification. "
-            f"Current: {aisle_width_m} m is too narrow. "
-            "Full table from specification (Euro Pallets):\n"
-            "• Driving (One-way road): 1.5 m\n"
-            "• Driving (Two-way road): 3.0 m\n"
-            "• Turning (One-way road): 2.3 m\n"
-            "• Turning (Two-way road): 3.8 m\n"
-            "• Loading/Unloading (One-way, drop-off on one side): 3.0 m\n"
-            "• Loading/Unloading (One-way, drop-off on both sides): 3.5 m\n"
-            "• Loading/Unloading (Two-way, drop-off on one side): 4.0 m\n"
-            "• Loading/Unloading (Two-way, drop-off on both sides): 4.5–5.6 m\n"
-            "Note: More aisle space allows higher driving speed, larger safety detection fields, faster pallet throughput, easier commissioning and tuning."
+            f"Note: XPL201 can carry up to 2000 kg, but a standard Euro pallet is only structurally rated for ~1500 kg under dynamic load. "
+            f"Current load: {load_weight_kg} kg on a Euro pallet. "
+            "Consider using an Industrial or custom pallet for loads above 1500 kg."
         )
-    elif aisle_width_m < 1.8:
-        issues.append(
-            f"Current aisle width {aisle_width_m} m is between 1.5–1.8 m. "
-            "While technically acceptable in some XPL layouts (one-way driving), 1.8 m is recommended for better safety and performance. "
-            "Please refer to the full XPL Layout and Aisle Planning Specification for your exact action types."
-        )
+        color = "orange"
 
+    # Vehicle capacity hard limit
     if load_weight_kg > 2000:
-        issues.append(f"XPL201 maximum load capacity is 2000 kg. Current: {load_weight_kg} kg")
+        issues.append(f"XPL201 maximum vehicle load capacity is 2000 kg. Current: {load_weight_kg} kg.")
+        color = "red"
+
+    # Aisle width
+    if aisle_width_m and aisle_width_m < 1.5:
+        issues.append(
+            f"Minimum aisle width for XPL201 (one-way driving) is 1.5 m. Current: {aisle_width_m} m.\n"
+            "Reference aisle table (Euro Pallets):\n"
+            "  • One-way driving: 1.5 m\n"
+            "  • Two-way driving: 3.0 m\n"
+            "  • One-way turning: 2.3 m\n"
+            "  • Two-way turning: 3.8 m\n"
+            "  • Loading/Unloading one-side: 3.0 m\n"
+            "  • Loading/Unloading both-sides: 3.5–5.6 m"
+        )
+        color = "red"
+    elif aisle_width_m and aisle_width_m < 1.8:
+        issues.append(
+            f"Aisle {aisle_width_m} m is technically acceptable (≥1.5 m) but 1.8 m is recommended for "
+            "better safety fields, higher speed, and easier commissioning."
+        )
+        if color == "green":
+            color = "orange"
 
     if issues:
-        is_critical = any("load capacity" in issue.lower() for issue in issues)
-        color = "red" if is_critical else "orange"
-        return False, "\n".join(issues), color
+        return False, "\n\n".join(issues), color
 
-    return True, "Acceptable for XPL201 (Transport / Cross Docking)", "green"
+    return True, "XPL201 – Within specification (Transport / Cross Docking)", "green"
 
 
-def validate_xqe122(load_weight_kg, max_stacking_height_m, fork_entry_width):
+def validate_xqe122(load_weight_kg, max_stacking_height_m, aisle_width_mm=0):
     """
-    Validation for XQE122 (Stacking / Conveyor).
-    Based on XQE Layout and Aisle Planning Specification (Euro Pallets).
+    XQE122 (Stacking / Conveyor).
+    Vehicle capacity: 1500 kg (900 kg above 4.5 m, 1200 kg above 3.5 m).
+    Minimum aisle width: 2900 mm (straight passage, one-way).
+    Floor stacking channel: truck body 1240 mm + 200 mm clearance each side = 1640 mm min channel width.
+    Floor stacking gap: 200 mm between pallets/boxes in ALL directions.
+    Rack stacking gap: 75 mm between pallets on shelf (standard).
     """
     issues = []
+    color = "green"
 
-
-
+    # Load capacity
     if load_weight_kg > 1500:
-        issues.append(f"XQE122 maximum load capacity is 1500 kg. Current: {load_weight_kg} kg")
+        issues.append(f"XQE122 maximum load capacity is 1500 kg. Current: {load_weight_kg} kg.")
+        color = "red"
     elif load_weight_kg > 1200 and max_stacking_height_m > 3.5:
-        issues.append(f"For loads > 1200 kg, maximum stacking height is 3.5 m. Current: {max_stacking_height_m} m")
+        issues.append(
+            f"For loads above 1200 kg, maximum stacking height is 3.5 m. "
+            f"Current: {load_weight_kg} kg at {max_stacking_height_m} m."
+        )
+        color = "red"
+    elif load_weight_kg > 900 and max_stacking_height_m > 4.5:
+        issues.append(
+            f"For loads above 900 kg, maximum stacking height is 4.5 m. "
+            f"Current: {load_weight_kg} kg at {max_stacking_height_m} m."
+        )
+        color = "red"
     elif max_stacking_height_m > 5.5:
-        issues.append(f"XQE122 maximum stacking height is 5.5 m (at 1200 kg, special arrangements required). Current: {max_stacking_height_m} m")
+        issues.append(
+            f"XQE122 maximum stacking height is 5.5 m (at ≤900 kg). "
+            f"Current: {max_stacking_height_m} m."
+        )
+        color = "red"
 
-    # Add aisle check from new PDF
-    # Note: If you have aisle_width_mm for XQE, uncomment and adjust
-    # if aisle_width_mm < 2500:
-    #     issues.append(f"Minimum straight passage aisle for XQE122 (one-way) is 2.5 m. Current: {aisle_width_mm / 1000:.1f} m. Turning radius reference 500 mm.")
+    # Aisle width — minimum 2900 mm straight passage (one-way)
+    if aisle_width_mm and aisle_width_mm < 2900:
+        issues.append(
+            f"Minimum aisle width for XQE122 is 2900 mm (straight passage, one-way). "
+            f"Current: {aisle_width_mm} mm.\n"
+            "Note: XQE truck body width is 1240 mm. Add 200 mm clearance on each side for safe operation."
+        )
+        if color == "green":
+            color = "orange"
 
     if issues:
-        is_critical = any("maximum" in issue.lower() or "load capacity" in issue.lower() for issue in issues)
-        color = "red" if is_critical else "orange"
-        return False, "\n".join(issues), color
+        return False, "\n\n".join(issues), color
 
-    return True, "Acceptable for XQE122 (Stacking / Conveyor)", "green"
+    return True, "XQE122 – Within specification (Stacking / Conveyor)", "green"
 
 
 def validate_xna121_151(aisle_width_m, load_weight_kg, max_stacking_height_m, model):
     """
-    Validation for XNA121 / XNA151 (Narrow Aisle).
-    Aisle width typically 1.78–2.0 m (standard narrow aisle spec).
+    XNA121 / XNA151 (Narrow Aisle).
+    Minimum aisle: 1.78 m.
     """
     issues = []
+    color = "green"
 
-    if aisle_width_m < 1.78:
-        issues.append(f"Minimum aisle width for XNA is 1.78 m. Current: {aisle_width_m} m")
-    if aisle_width_m > 2.0:
-        issues.append(f"Recommended maximum aisle width for XNA is 2.0 m (wider aisles may reduce efficiency). Current: {aisle_width_m} m")
+    if aisle_width_m and aisle_width_m < 1.78:
+        issues.append(f"Minimum aisle width for XNA is 1.78 m. Current: {aisle_width_m} m.")
+        color = "red"
+    elif aisle_width_m and aisle_width_m > 2.0:
+        issues.append(
+            f"XNA is optimised for aisles up to 2.0 m. "
+            f"Current: {aisle_width_m} m — wider aisles may reduce efficiency."
+        )
+        if color == "green":
+            color = "orange"
 
     if model == "XNA121 (up to 8.5m)":
         if max_stacking_height_m > 8.5:
-            issues.append(f"XNA121 maximum lift height is 8.5 m. Current: {max_stacking_height_m} m")
+            issues.append(f"XNA121 maximum lift height is 8.5 m. Current: {max_stacking_height_m} m.")
+            color = "red"
         if load_weight_kg > 1200:
-            issues.append(f"XNA121 maximum load is 1200 kg. Current: {load_weight_kg} kg")
-    else:  # XNA151
+            issues.append(f"XNA121 maximum load is 1200 kg. Current: {load_weight_kg} kg.")
+            color = "red"
+    else:
         if max_stacking_height_m > 13.0:
-            issues.append(f"XNA151 maximum lift height is 13 m. Current: {max_stacking_height_m} m")
+            issues.append(f"XNA151 maximum lift height is 13.0 m. Current: {max_stacking_height_m} m.")
+            color = "red"
         if load_weight_kg > 1500:
-            issues.append(f"XNA151 maximum load is 1500 kg. Current: {load_weight_kg} kg")
+            issues.append(f"XNA151 maximum load is 1500 kg. Current: {load_weight_kg} kg.")
+            color = "red"
 
     if issues:
-        color = "red" if any("minimum" in msg.lower() or "maximum" in msg.lower() for msg in issues) else "orange"
-        return False, "\n".join(issues), color
+        return False, "\n\n".join(issues), color
 
-    return True, f"Acceptable for {model} (Narrow Aisle)", "green"
+    return True, f"{model} – Within specification (Narrow Aisle)", "green"

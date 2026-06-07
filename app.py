@@ -818,7 +818,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             if "Transport / Cross Docking" in selected_apps and all_data.get("cross_docking_aisle"):
                 aisle = all_data.get("cross_docking_aisle", 0)
                 weight = all_data.get("load_weight_kg", 0)
-                is_valid, msg, color = validate_xpl201(aisle, weight)
+                is_valid, msg, color = validate_xpl201(aisle, weight, all_data.get("pallet_type", ""))
                 validation_summary.append(f"XPL201 ({all_data.get('xpl_sub_type', 'N/A')}): {msg} ({color})")
                 if is_valid or color == "orange":
                     speed = 1.75
@@ -831,7 +831,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 is_valid, msg, color = validate_xqe122(
                     all_data.get("load_weight_kg", 0),
                     all_data.get("max_stacking_height_m", 0),
-                    320
+                    all_data.get("aisle_width_mm", 0),
                 )
                 validation_summary.append(f"XQE122: {msg} ({color})")
                 if is_valid or color == "orange":
