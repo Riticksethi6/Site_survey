@@ -13,14 +13,49 @@ from translations import t, LANGUAGES
 TEMPLATE_PATH = "template.docx"
 LOGO_PATH = "Picture2.png"
 
-XQE_PDF_CANDIDATES = [
-    "1.10_XQE_Layout_planning_Specification.pdf",
-    "1.10_XQE_Layout_Planning_Specification.pdf",
-]
-
 XPL_PDF_CANDIDATES = [
     "1.9_XPL_Layout_planning_Specification.pdf",
     "1.9_XPL_Layout_Planning_Specification.pdf",
+]
+
+# Resource catalogue — each entry: (label, filename, mime, description, icon)
+RESOURCES = [
+    (
+        "XQE122 Layout Requirements",
+        "1.1_Layout_Requirment_XQE_Draft.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Aisle planning, clearances, floor stacking and rack stacking specifications for the XQE122 stacking AMR.",
+        "📐",
+    ),
+    (
+        "XNA Layout Requirements (Draft)",
+        "1.3_Layout_Requirment_XNA_Draft .docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Draft layout and aisle planning specification for XNA121 / XNA151 narrow-aisle AMRs.",
+        "📐",
+    ),
+    (
+        "XQE122 Customer White Book",
+        "XQE122 CE White book R1.1 AK 2026-05-28 - external.pdf",
+        "application/pdf",
+        "Complete customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
+        "📖",
+    ),
+    (
+        "EP System Requirements",
+        "5_System Requirments.pdf",
+        "application/pdf",
+        "Network, WiFi, IT infrastructure and connectivity requirements for EP AGV fleet deployment.",
+        "🛜",
+    ),
+    (
+        "XPL201 Layout Planning Specification",
+        None,  # resolved at runtime from candidates
+        "application/pdf",
+        "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
+        "📐",
+        "XPL_PDF_CANDIDATES",
+    ),
 ]
 
 
@@ -462,38 +497,50 @@ distances = [
 ]
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
 
-st.header("Reference – Layout Specifications")
+st.header("📚 Resources & Reference Documents")
+st.caption("Download technical specifications, layout guides, and customer documents for EP equipment.")
 
-col_pdf1, col_pdf2 = st.columns(2)
+_res_cols = st.columns(3)
+_col_idx = 0
 
-xqe_pdf_path = find_existing_file(XQE_PDF_CANDIDATES)
-xpl_pdf_path = find_existing_file(XPL_PDF_CANDIDATES)
+for _res in RESOURCES:
+    _label = _res[0]
+    _fname = _res[1]
+    _mime = _res[2]
+    _desc = _res[3]
+    _icon = _res[4]
+    _candidate_key = _res[5] if len(_res) > 5 else None
 
-with col_pdf1:
-    st.subheader("XQE – Stacking AMR Layout Planning")
-    if xqe_pdf_path:
-        with open(xqe_pdf_path, "rb") as pdf_file:
-            st.download_button(
-                label="Download Full XQE PDF",
-                data=pdf_file.read(),
-                file_name=os.path.basename(xqe_pdf_path),
-                mime="application/pdf",
-            )
-    else:
-        st.warning("XQE PDF file not found in app folder.")
+    # Resolve candidate list for XPL
+    if _candidate_key == "XPL_PDF_CANDIDATES":
+        _fname = find_existing_file(XPL_PDF_CANDIDATES)
 
-with col_pdf2:
-    st.subheader("XPL – Pallet Mover Layout Planning")
-    if xpl_pdf_path:
-        with open(xpl_pdf_path, "rb") as pdf_file:
-            st.download_button(
-                label="Download Full XPL PDF",
-                data=pdf_file.read(),
-                file_name=os.path.basename(xpl_pdf_path),
-                mime="application/pdf",
-            )
-    else:
-        st.warning("XPL PDF file not found in app folder.")
+    with _res_cols[_col_idx % 3]:
+        st.markdown(
+            f"""
+            <div style="border:1px solid #e0e0e0;border-radius:12px;padding:16px 14px 10px 14px;
+                        background:#fafafa;min-height:140px;margin-bottom:8px;">
+              <div style="font-size:28px;margin-bottom:6px;">{_icon}</div>
+              <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1a1a2e;">{_label}</div>
+              <div style="font-size:12px;color:#555;margin-bottom:10px;">{_desc}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if _fname and os.path.exists(_fname):
+            with open(_fname, "rb") as _f:
+                st.download_button(
+                    label=f"Download",
+                    data=_f.read(),
+                    file_name=os.path.basename(_fname),
+                    mime=_mime,
+                    use_container_width=True,
+                    key=f"res_dl_{_col_idx}",
+                )
+        else:
+            st.caption("📋 Coming soon")
+
+    _col_idx += 1
 
 st.markdown("### Generate Report")
 st.info(

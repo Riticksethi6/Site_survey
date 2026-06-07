@@ -5,8 +5,7 @@ from datetime import datetime
 from product_validators import validate_xpl201, validate_xqe122, validate_xna121_151
 from translations import t
 
-WIFI_CHECKLIST_PDF = "4.2_Requiements for the WiFI Checklist.pdf"
-WIFI_TESTING_PDF = "4.3_Wifi_Testing_Procedure.pdf"
+SYSTEM_REQUIREMENTS_PDF = "5_System Requirments.pdf"
 
 
 def _parse_load_height_m(dimensions_text: str) -> float:
@@ -563,54 +562,36 @@ def build_header_inputs():
 
         if site_wifi_available == "Yes":
             st.info(
-                "Please refer to the following documents to check the latency and configuration required by AGVs, and to verify whether the full zone is covered."
+                "Please refer to the EP System Requirements document to verify AGV network, latency, and WiFi coverage requirements."
             )
-
-            wifi_col1, wifi_col2 = st.columns(2)
-
-            with wifi_col1:
-                if os.path.exists(WIFI_CHECKLIST_PDF):
-                    with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
-                        st.download_button(
-                            label="Download WiFi Checklist",
-                            data=pdf_file.read(),
-                            file_name=os.path.basename(WIFI_CHECKLIST_PDF),
-                            mime="application/pdf",
-                        )
-                else:
-                    st.info("WiFi checklist PDF not found.")
-
-            with wifi_col2:
-                if os.path.exists(WIFI_TESTING_PDF):
-                    with open(WIFI_TESTING_PDF, "rb") as pdf_file:
-                        st.download_button(
-                            label="Download WiFi Testing Procedure",
-                            data=pdf_file.read(),
-                            file_name=os.path.basename(WIFI_TESTING_PDF),
-                            mime="application/pdf",
-                        )
-                else:
-                    st.info("WiFi testing procedure PDF not found.")
-
+            if os.path.exists(SYSTEM_REQUIREMENTS_PDF):
+                with open(SYSTEM_REQUIREMENTS_PDF, "rb") as f:
+                    st.download_button(
+                        label="📄 Download EP System Requirements",
+                        data=f.read(),
+                        file_name=SYSTEM_REQUIREMENTS_PDF,
+                        mime="application/pdf",
+                        use_container_width=True,
+                    )
             network_status = st.text_area(
-                "Site Network Status / WiFi Coverage",
+                "Site Network Status / WiFi Coverage Notes",
                 height=80,
-                key="network_status"
+                key="network_status",
+                placeholder="e.g. Full coverage confirmed / partial coverage in zone B / survey pending",
             )
         else:
-            st.warning("WiFi is not available on site.")
-            st.info("Please talk to your IT team and share the WiFi checklist.")
-
-            if os.path.exists(WIFI_CHECKLIST_PDF):
-                with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
+            st.warning("WiFi is not available on site. AGVs require a stable WiFi network to operate.")
+            st.info("Share the EP System Requirements document with the customer's IT team.")
+            if os.path.exists(SYSTEM_REQUIREMENTS_PDF):
+                with open(SYSTEM_REQUIREMENTS_PDF, "rb") as f:
                     st.download_button(
-                        label="Download WiFi Checklist",
-                        data=pdf_file.read(),
-                        file_name=os.path.basename(WIFI_CHECKLIST_PDF),
+                        label="📄 Download EP System Requirements",
+                        data=f.read(),
+                        file_name=SYSTEM_REQUIREMENTS_PDF,
                         mime="application/pdf",
+                        use_container_width=True,
                     )
-            else:
-                st.info("WiFi checklist PDF not found.")
+            network_status = ""
 
             network_status = st.text_area(
                 "Site Network Status / WiFi Coverage",
