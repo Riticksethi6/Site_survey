@@ -350,13 +350,8 @@ def build_header_inputs():
                     f"❌ Minimum channel width for XQE floor stacking is 1640 mm "
                     f"(truck body 1240 mm + 200 mm clearance each side). Current: {aisle_width_mm} mm."
                 )
-            elif aisle_width_mm and aisle_width_mm < 2900:
-                st.warning(
-                    f"⚠️ Channel width {aisle_width_mm} mm is above minimum (1640 mm) but below recommended "
-                    f"XQE operating aisle of 2900 mm. Verify layout with engineering."
-                )
             elif aisle_width_mm:
-                st.success(f"✅ Aisle width OK ({aisle_width_mm} mm ≥ 2900 mm).")
+                st.success(f"✅ Channel width OK ({aisle_width_mm} mm — above minimum 1640 mm).")
 
         elif stacking_type == "Rack Stacking":
             storage_locations = st.text_area(
@@ -392,8 +387,6 @@ def build_header_inputs():
 
             if aisle_width_mm and aisle_width_mm < 2840:
                 st.error(f"❌ Minimum rack aisle width is 2840 mm (pallet face to pallet face). Current: {aisle_width_mm} mm.")
-            elif aisle_width_mm and aisle_width_mm < 2900:
-                st.warning(f"⚠️ Rack aisle {aisle_width_mm} mm is above 2840 mm but below recommended 2900 mm XQE operating aisle.")
             elif aisle_width_mm:
                 st.success(f"✅ Rack aisle width OK ({aisle_width_mm} mm).")
 
@@ -426,17 +419,53 @@ def build_header_inputs():
         load_height_m = _parse_load_height_m(primary_pallet["load_dimensions"])
         auto_level = ""
 
-        if load_height_m > 0 and max_stacking_height_m > 0:
-            auto_level = str(math.floor(max_stacking_height_m / load_height_m))
-            st.info(
-                f"Based on load height {load_height_m:.2f} m and maximum stacking height {max_stacking_height_m:.2f} m, possible stacking level is {auto_level}."
-            )
+        # XQE machine max lift height
+        _xqe_max_h = 5.5 if "Stacking/Conveyor" in application else 999.0
+
+        if load_height_m > 0:
+            machine_max_levels = math.floor(_xqe_max_h / load_height_m)
+            if max_stacking_height_m > 0:
+                customer_max_levels = math.floor(max_stacking_height_m / load_height_m)
+                auto_level = str(min(machine_max_levels, customer_max_levels))
+                st.info(
+                    f"Pallet height: {load_height_m:.2f} m  →  "
+                    f"XQE max height {_xqe_max_h} m allows **{machine_max_levels} levels**. "
+                    f"Your required height {max_stacking_height_m} m = {customer_max_levels} levels. "
+                    f"Suggested level: **{auto_level}**."
+                )
+            else:
+                auto_level = str(machine_max_levels)
+                st.info(
+                    f"Pallet height: {load_height_m:.2f} m  →  "
+                    f"XQE can stack up to **{machine_max_levels} levels** (max height {_xqe_max_h} m)."
+                )
+        elif max_stacking_height_m > 0:
+            st.caption("Enter pallet dimensions (L×W×H mm) above to auto-calculate max stacking levels.")
 
         stacking_level = st.text_input(
             "Level of Stacking",
             value=auto_level,
-            key="stacking_level"
+            key="stacking_level",
+            help="Number of pallets stacked on top of each other.",
         )
+
+        # Validate manually entered level against machine max
+        if stacking_level and load_height_m > 0 and "Stacking/Conveyor" in application:
+            try:
+                _lvl = int(stacking_level)
+                _total_h = _lvl * load_height_m
+                if _total_h > _xqe_max_h:
+                    st.error(
+                        f"❌ {_lvl} levels × {load_height_m:.2f} m = {_total_h:.2f} m — "
+                        f"exceeds XQE max lift height of {_xqe_max_h} m. "
+                        f"Maximum {math.floor(_xqe_max_h / load_height_m)} levels for this pallet height."
+                    )
+                else:
+                    st.success(
+                        f"✅ {_lvl} levels × {load_height_m:.2f} m = {_total_h:.2f} m — within XQE max height of {_xqe_max_h} m."
+                    )
+            except ValueError:
+                pass
 
         if "Stacking/Conveyor" in application:
             if load_weight_kg <= 900 and max_stacking_height_m > 5.5:
