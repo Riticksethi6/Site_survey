@@ -544,10 +544,11 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 context["pallet_width_mm"] = ""
 
             cad_file = all_data.get("cad_file")
+            cad_files = all_data.get("cad_files") or ([cad_file] if cad_file else [])
             conveyor_picture = all_data.get("conveyor_picture")
             photos = material_flow_data.get("photos", [])
 
-            context["cad_filename"] = cad_file.name if cad_file else ""
+            context["cad_filename"] = ", ".join(f.name for f in cad_files) if cad_files else ""
             context["conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
             job_to_do_val = material_flow_data.get("job_to_do_flow") or all_data.get("task_description", "")
             context["job_to_do"] = job_to_do_val
@@ -892,6 +893,11 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             safe_name = all_data.get("customer_name", "customer").strip().replace(" ", "_").lower()
 
             st.session_state["generated_report_buffer"] = report_buffer.getvalue()
+            # Store all layout files (multi-upload support)
+            st.session_state["generated_cad_files"] = [
+                {"name": f.name, "bytes": f.getvalue()} for f in cad_files if f
+            ]
+            # keep legacy keys for backward compat
             st.session_state["generated_cad_file_bytes"] = cad_file.getvalue() if cad_file else None
             st.session_state["generated_cad_file_name"] = cad_file.name if cad_file else ""
 
@@ -975,7 +981,13 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
         if conveyor_picture_bytes and conveyor_picture_name:
             zip_file.writestr(conveyor_picture_name, conveyor_picture_bytes)
 
-        if cad_file_bytes and cad_file_name:
+        # Add all layout files (multi-upload)
+        _cad_files = st.session_state.get("generated_cad_files") or []
+        if _cad_files:
+            for _cf in _cad_files:
+                if _cf.get("bytes") and _cf.get("name"):
+                    zip_file.writestr(f"layouts/{_cf['name']}", _cf["bytes"])
+        elif cad_file_bytes and cad_file_name:
             zip_file.writestr(cad_file_name, cad_file_bytes)
 
         if feedback_data:

@@ -609,11 +609,35 @@ def build_header_inputs():
         )
 
     st.markdown("### Site Layout")
-    cad_file = st.file_uploader(
-        "Upload CAD file, floor plan, or layout drawing",
-        type=["dwg", "nwd", "pdf", "png", "jpg", "jpeg", "zip"],
-        key="cad_layout_file"
+    st.caption(
+        "Upload any combination of CAD drawings, floor plans, photos, or PDF layouts. "
+        "Supported: DWG, DXF, NWD, PDF, PNG, JPG, JPEG, TIFF, BMP, SVG, ZIP"
     )
+    cad_files = st.file_uploader(
+        "Upload site layout files (CAD, floor plan, images, PDF)",
+        type=["dwg", "dxf", "nwd", "pdf", "png", "jpg", "jpeg", "tiff", "tif", "bmp", "svg", "zip"],
+        key="cad_layout_file",
+        accept_multiple_files=True,
+    )
+
+    # Use first file as primary for backward-compat (cad_file key)
+    cad_file = cad_files[0] if cad_files else None
+
+    if cad_files:
+        st.markdown(f"**{len(cad_files)} file(s) uploaded:**")
+        preview_cols = st.columns(min(len(cad_files), 4))
+        for i, f in enumerate(cad_files):
+            with preview_cols[i % 4]:
+                ext = f.name.rsplit(".", 1)[-1].lower()
+                if ext in ("png", "jpg", "jpeg", "bmp", "tiff", "tif"):
+                    st.image(f, caption=f.name, use_container_width=True)
+                else:
+                    st.markdown(
+                        f"<div style='border:1px solid #d9d9e3;border-radius:8px;padding:14px;"
+                        f"text-align:center;font-size:12px;color:#555;'>"
+                        f"📄 {f.name}</div>",
+                        unsafe_allow_html=True,
+                    )
 
     return {
         "customer_name": customer_name,
@@ -661,4 +685,5 @@ def build_header_inputs():
         "clearance_required": clearance_required,
         "clearance_height_m": clearance_height_m,
         "cad_file": cad_file,
+        "cad_files": cad_files,
     }
