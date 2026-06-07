@@ -314,7 +314,7 @@ def _build_operational_metrics(route_details):
     }
 
 
-st.set_page_config(page_title="EP Equipment – Site Survey Dashboard", layout="wide")
+st.set_page_config(page_title="EP Equipment – Smart Products Site Survey", layout="wide")
 
 for key, default in {
     "report_ready": False,
