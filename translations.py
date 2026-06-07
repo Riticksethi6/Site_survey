@@ -13,7 +13,7 @@ LANGUAGES = {
 T = {
     "en": {
         # App shell
-        "app_title": "EP Equipment – Site Survey Dashboard",
+        "app_title": "EP Equipment – Smart Products Site Survey",
         "app_subtitle": "Fill in the form → Get product recommendations → Generate & download report",
         "mode_label": "View mode",
         "mode_expert": "Expert (Tabs)",
@@ -83,7 +83,7 @@ T = {
         "sum_empty": "—",
     },
     "de": {
-        "app_title": "EP Equipment – Site Survey Dashboard",
+        "app_title": "EP Equipment – Smart Products Site Survey",
         "app_subtitle": "Formular ausfüllen → Produktempfehlungen erhalten → Bericht erstellen & herunterladen",
         "mode_label": "Ansichtsmodus",
         "mode_expert": "Experte (Tabs)",
@@ -213,7 +213,7 @@ T = {
 
     # ── Dutch ─────────────────────────────────────────────────────────────────
     "nl": {
-        "app_title": "EP Equipment – Site Survey Dashboard",
+        "app_title": "EP Equipment – Smart Products Site Survey",
         "app_subtitle": "Vul het formulier in → Ontvang productaanbevelingen → Genereer & download rapport",
         "mode_label": "Weergavemodus",
         "mode_expert": "Expert (Tabbladen)",
