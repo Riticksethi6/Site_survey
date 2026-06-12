@@ -13,14 +13,49 @@ from translations import t, LANGUAGES
 TEMPLATE_PATH = "template.docx"
 LOGO_PATH = "Picture2.png"
 
-XQE_PDF_CANDIDATES = [
-    "1.10_XQE_Layout_planning_Specification.pdf",
-    "1.10_XQE_Layout_Planning_Specification.pdf",
-]
-
 XPL_PDF_CANDIDATES = [
     "1.9_XPL_Layout_planning_Specification.pdf",
     "1.9_XPL_Layout_Planning_Specification.pdf",
+]
+
+# Resource catalogue — each entry: (label, filename, mime, description, icon)
+RESOURCES = [
+    (
+        "XQE122 Layout Requirements",
+        "1.1_Layout_Requirment_XQE.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Aisle planning, clearances, floor stacking and rack stacking specifications for the XQE122 stacking AMR.",
+        "📐",
+    ),
+    (
+        "XNA Layout Requirements (Draft)",
+        "1.3_Layout_Requirment_XNA.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Draft layout and aisle planning specification for XNA121 / XNA151 narrow-aisle AMRs.",
+        "📐",
+    ),
+    (
+        "XQE122 Customer White Book",
+        "XQE122 CE White book R1.1 AK 2026-05-28 - external.pdf",
+        "application/pdf",
+        "Complete customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
+        "📖",
+    ),
+    (
+        "EP System Requirements",
+        "5_System Requirments.pdf",
+        "application/pdf",
+        "Network, WiFi, IT infrastructure and connectivity requirements for EP AGV fleet deployment.",
+        "🛜",
+    ),
+    (
+        "XPL201 Layout Planning Specification",
+        None,  # resolved at runtime from candidates
+        "application/pdf",
+        "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
+        "📐",
+        "XPL_PDF_CANDIDATES",
+    ),
 ]
 
 
@@ -161,6 +196,7 @@ def _is_forbidden_session_key(key: str) -> bool:
         "download_",
         "route_source_image_",
         "route_layout_",
+        "res_dl_",
     ]
     forbidden_exact = {
         "_session_uploader",
@@ -279,7 +315,7 @@ def _build_operational_metrics(route_details):
     }
 
 
-st.set_page_config(page_title="EP Equipment – Site Survey Dashboard", layout="wide")
+st.set_page_config(page_title="EP Equipment – Smart Products Site Survey", layout="wide")
 
 for key, default in {
     "report_ready": False,
@@ -462,38 +498,50 @@ distances = [
 ]
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
 
-st.header("Reference – Layout Specifications")
+st.header("📚 Resources & Reference Documents")
+st.caption("Download technical specifications, layout guides, and customer documents for EP equipment.")
 
-col_pdf1, col_pdf2 = st.columns(2)
+_res_cols = st.columns(3)
+_col_idx = 0
 
-xqe_pdf_path = find_existing_file(XQE_PDF_CANDIDATES)
-xpl_pdf_path = find_existing_file(XPL_PDF_CANDIDATES)
+for _res in RESOURCES:
+    _label = _res[0]
+    _fname = _res[1]
+    _mime = _res[2]
+    _desc = _res[3]
+    _icon = _res[4]
+    _candidate_key = _res[5] if len(_res) > 5 else None
 
-with col_pdf1:
-    st.subheader("XQE – Stacking AMR Layout Planning")
-    if xqe_pdf_path:
-        with open(xqe_pdf_path, "rb") as pdf_file:
-            st.download_button(
-                label="Download Full XQE PDF",
-                data=pdf_file.read(),
-                file_name=os.path.basename(xqe_pdf_path),
-                mime="application/pdf",
-            )
-    else:
-        st.warning("XQE PDF file not found in app folder.")
+    # Resolve candidate list for XPL
+    if _candidate_key == "XPL_PDF_CANDIDATES":
+        _fname = find_existing_file(XPL_PDF_CANDIDATES)
 
-with col_pdf2:
-    st.subheader("XPL – Pallet Mover Layout Planning")
-    if xpl_pdf_path:
-        with open(xpl_pdf_path, "rb") as pdf_file:
-            st.download_button(
-                label="Download Full XPL PDF",
-                data=pdf_file.read(),
-                file_name=os.path.basename(xpl_pdf_path),
-                mime="application/pdf",
-            )
-    else:
-        st.warning("XPL PDF file not found in app folder.")
+    with _res_cols[_col_idx % 3]:
+        st.markdown(
+            f"""
+            <div style="border:1px solid #e0e0e0;border-radius:12px;padding:16px 14px 10px 14px;
+                        background:#fafafa;min-height:140px;margin-bottom:8px;">
+              <div style="font-size:28px;margin-bottom:6px;">{_icon}</div>
+              <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1a1a2e;">{_label}</div>
+              <div style="font-size:12px;color:#555;margin-bottom:10px;">{_desc}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if _fname and os.path.exists(_fname):
+            with open(_fname, "rb") as _f:
+                st.download_button(
+                    label=f"Download",
+                    data=_f.read(),
+                    file_name=os.path.basename(_fname),
+                    mime=_mime,
+                    use_container_width=True,
+                    key=f"res_dl_{_col_idx}",
+                )
+        else:
+            st.caption("📋 Coming soon")
+
+    _col_idx += 1
 
 st.markdown("### Generate Report")
 st.info(
@@ -544,10 +592,11 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 context["pallet_width_mm"] = ""
 
             cad_file = all_data.get("cad_file")
+            cad_files = all_data.get("cad_files") or ([cad_file] if cad_file else [])
             conveyor_picture = all_data.get("conveyor_picture")
             photos = material_flow_data.get("photos", [])
 
-            context["cad_filename"] = cad_file.name if cad_file else ""
+            context["cad_filename"] = ", ".join(f.name for f in cad_files) if cad_files else ""
             context["conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
             job_to_do_val = material_flow_data.get("job_to_do_flow") or all_data.get("task_description", "")
             context["job_to_do"] = job_to_do_val
@@ -817,7 +866,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             if "Transport / Cross Docking" in selected_apps and all_data.get("cross_docking_aisle"):
                 aisle = all_data.get("cross_docking_aisle", 0)
                 weight = all_data.get("load_weight_kg", 0)
-                is_valid, msg, color = validate_xpl201(aisle, weight)
+                is_valid, msg, color = validate_xpl201(aisle, weight, all_data.get("pallet_type", ""))
                 validation_summary.append(f"XPL201 ({all_data.get('xpl_sub_type', 'N/A')}): {msg} ({color})")
                 if is_valid or color == "orange":
                     speed = 1.75
@@ -830,7 +879,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 is_valid, msg, color = validate_xqe122(
                     all_data.get("load_weight_kg", 0),
                     all_data.get("max_stacking_height_m", 0),
-                    320
+                    all_data.get("aisle_width_mm", 0),
                 )
                 validation_summary.append(f"XQE122: {msg} ({color})")
                 if is_valid or color == "orange":
@@ -892,6 +941,9 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             safe_name = all_data.get("customer_name", "customer").strip().replace(" ", "_").lower()
 
             st.session_state["generated_report_buffer"] = report_buffer.getvalue()
+            st.session_state["generated_cad_files"] = [
+                {"name": f.name, "bytes": f.getvalue()} for f in cad_files if f
+            ]
             st.session_state["generated_cad_file_bytes"] = cad_file.getvalue() if cad_file else None
             st.session_state["generated_cad_file_name"] = cad_file.name if cad_file else ""
 
@@ -975,7 +1027,12 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
         if conveyor_picture_bytes and conveyor_picture_name:
             zip_file.writestr(conveyor_picture_name, conveyor_picture_bytes)
 
-        if cad_file_bytes and cad_file_name:
+        _cad_files = st.session_state.get("generated_cad_files") or []
+        if _cad_files:
+            for _cf in _cad_files:
+                if _cf.get("bytes") and _cf.get("name"):
+                    zip_file.writestr(f"layouts/{_cf['name']}", _cf["bytes"])
+        elif cad_file_bytes and cad_file_name:
             zip_file.writestr(cad_file_name, cad_file_bytes)
 
         if feedback_data:

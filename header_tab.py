@@ -5,8 +5,7 @@ from datetime import datetime
 from product_validators import validate_xpl201, validate_xqe122, validate_xna121_151
 from translations import t
 
-WIFI_CHECKLIST_PDF = "4.2_Requiements for the WiFI Checklist.pdf"
-WIFI_TESTING_PDF = "4.3_Wifi_Testing_Procedure.pdf"
+SYSTEM_REQUIREMENTS_PDF = "5_System Requirments.pdf"
 
 
 def _parse_load_height_m(dimensions_text: str) -> float:
@@ -230,7 +229,9 @@ def build_header_inputs():
 
         if primary_pallet["pallet_type"] == "Euro" and load_weight_kg > 1500:
             st.warning(
-                "Euro pallet cannot bear more than 1500 kg. Please select 'Other' and specify the correct pallet type and dimensions."
+                f"⚠️ XPL201 can carry up to 2000 kg, but a standard Euro pallet is only structurally rated for ~1500 kg under dynamic load. "
+                f"Current: {load_weight_kg} kg on Euro pallet. "
+                "Use an Industrial or custom pallet for loads above 1500 kg, or confirm the actual pallet rating with your supplier."
             )
 
     if "Transport / Cross Docking" in application:
@@ -319,28 +320,38 @@ def build_header_inputs():
             )
 
             box_distance_mm = st.number_input(
-                "Distance Between 2 Pallets [mm]",
+                "Gap Between Pallets / Boxes [mm] (all directions)",
                 min_value=0,
                 value=0,
                 step=1,
-                key="floor_box_distance_mm"
+                key="floor_box_distance_mm",
+                help="XQE requires minimum 200 mm clearance between pallets/boxes in ALL directions — front, back, left, right.",
             )
 
             if box_distance_mm and box_distance_mm < 200:
-                st.error("Minimum distance between 2 pallets for floor stacking is 200 mm.")
+                st.error(
+                    "❌ Minimum gap between pallets/boxes for XQE floor stacking is 200 mm in ALL directions "
+                    "(front, back, left, right). Current: {} mm.".format(box_distance_mm)
+                )
+            elif box_distance_mm:
+                st.success("✅ Gap between pallets OK ({} mm ≥ 200 mm in all directions).".format(box_distance_mm))
 
             aisle_width_mm = st.number_input(
-                "Floor Storage Aisle Width [mm]",
+                "Floor Storage Channel / Aisle Width [mm]",
                 min_value=0,
                 value=0,
                 step=1,
-                key="floor_aisle_width_mm"
+                key="floor_aisle_width_mm",
+                help="XQE truck body is 1240 mm wide. Add 200 mm clearance on each side = 1640 mm minimum channel. Overall aisle for XQE operation: minimum 2900 mm.",
             )
 
             if aisle_width_mm and aisle_width_mm < 1640:
-                st.error("Minimum aisle width for floor stacking is 1640 mm.")
+                st.error(
+                    f"❌ Minimum channel width for XQE floor stacking is 1640 mm "
+                    f"(truck body 1240 mm + 200 mm clearance each side). Current: {aisle_width_mm} mm."
+                )
             elif aisle_width_mm:
-                st.info("The more the available aisle space, the faster and smoother the process.")
+                st.success(f"✅ Channel width OK ({aisle_width_mm} mm — above minimum 1640 mm).")
 
         elif stacking_type == "Rack Stacking":
             storage_locations = st.text_area(
@@ -350,28 +361,34 @@ def build_header_inputs():
             )
 
             box_distance_mm = st.number_input(
-                "Distance Between Pallets Stacked in Racks [mm]",
+                "Gap Between Pallets on Shelf [mm]",
                 min_value=0,
                 value=0,
                 step=1,
-                key="rack_box_distance_mm"
+                key="rack_box_distance_mm",
+                help="Standard minimum gap between two pallets in a rack shelf is 75 mm.",
             )
 
             if box_distance_mm and box_distance_mm < 75:
-                st.error("Minimum distance between pallets stacked in racks is 75 mm.")
+                st.error(
+                    f"❌ Minimum gap between pallets on a rack shelf is 75 mm (standard). Current: {box_distance_mm} mm."
+                )
+            elif box_distance_mm:
+                st.success(f"✅ Rack shelf gap OK ({box_distance_mm} mm ≥ 75 mm).")
 
             aisle_width_mm = st.number_input(
-                "Rack Stacking Aisle Width (Pallet to Pallet) [mm]",
+                "Rack Aisle Width (pallet face to pallet face) [mm]",
                 min_value=0,
                 value=0,
                 step=1,
-                key="rack_aisle_width_mm"
+                key="rack_aisle_width_mm",
+                help="Minimum 2900 mm for XQE rack operation (overall aisle). Minimum 2840 mm pallet-to-pallet face.",
             )
 
             if aisle_width_mm and aisle_width_mm < 2840:
-                st.error("Minimum rack stacking aisle width is 2840 mm pallet-to-pallet.")
+                st.error(f"❌ Minimum rack aisle width is 2840 mm (pallet face to pallet face). Current: {aisle_width_mm} mm.")
             elif aisle_width_mm:
-                st.info("The more the available aisle space, the faster the process.")
+                st.success(f"✅ Rack aisle width OK ({aisle_width_mm} mm).")
 
     if "Narrow Aisle" in application:
         st.info("Narrow Aisle (XNA121 / XNA151): recommended aisle width 1.78–2.0 m")
@@ -402,17 +419,53 @@ def build_header_inputs():
         load_height_m = _parse_load_height_m(primary_pallet["load_dimensions"])
         auto_level = ""
 
-        if load_height_m > 0 and max_stacking_height_m > 0:
-            auto_level = str(math.floor(max_stacking_height_m / load_height_m))
-            st.info(
-                f"Based on load height {load_height_m:.2f} m and maximum stacking height {max_stacking_height_m:.2f} m, possible stacking level is {auto_level}."
-            )
+        # XQE machine max lift height
+        _xqe_max_h = 5.5 if "Stacking/Conveyor" in application else 999.0
+
+        if load_height_m > 0:
+            machine_max_levels = math.floor(_xqe_max_h / load_height_m)
+            if max_stacking_height_m > 0:
+                customer_max_levels = math.floor(max_stacking_height_m / load_height_m)
+                auto_level = str(min(machine_max_levels, customer_max_levels))
+                st.info(
+                    f"Pallet height: {load_height_m:.2f} m  →  "
+                    f"XQE max height {_xqe_max_h} m allows **{machine_max_levels} levels**. "
+                    f"Your required height {max_stacking_height_m} m = {customer_max_levels} levels. "
+                    f"Suggested level: **{auto_level}**."
+                )
+            else:
+                auto_level = str(machine_max_levels)
+                st.info(
+                    f"Pallet height: {load_height_m:.2f} m  →  "
+                    f"XQE can stack up to **{machine_max_levels} levels** (max height {_xqe_max_h} m)."
+                )
+        elif max_stacking_height_m > 0:
+            st.caption("Enter pallet dimensions (L×W×H mm) above to auto-calculate max stacking levels.")
 
         stacking_level = st.text_input(
             "Level of Stacking",
             value=auto_level,
-            key="stacking_level"
+            key="stacking_level",
+            help="Number of pallets stacked on top of each other.",
         )
+
+        # Validate manually entered level against machine max
+        if stacking_level and load_height_m > 0 and "Stacking/Conveyor" in application:
+            try:
+                _lvl = int(stacking_level)
+                _total_h = _lvl * load_height_m
+                if _total_h > _xqe_max_h:
+                    st.error(
+                        f"❌ {_lvl} levels × {load_height_m:.2f} m = {_total_h:.2f} m — "
+                        f"exceeds XQE max lift height of {_xqe_max_h} m. "
+                        f"Maximum {math.floor(_xqe_max_h / load_height_m)} levels for this pallet height."
+                    )
+                else:
+                    st.success(
+                        f"✅ {_lvl} levels × {load_height_m:.2f} m = {_total_h:.2f} m — within XQE max height of {_xqe_max_h} m."
+                    )
+            except ValueError:
+                pass
 
         if "Stacking/Conveyor" in application:
             if load_weight_kg <= 900 and max_stacking_height_m > 5.5:
@@ -455,7 +508,7 @@ def build_header_inputs():
         col_idx = 0
 
         if "Transport / Cross Docking" in application and cross_docking_aisle and load_weight_kg:
-            is_v, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg)
+            is_v, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg, primary_pallet.get("pallet_type", ""))
             with val_cols[col_idx]:
                 if color == "green":
                     st.success(f"**XPL201** ✅\n\n{msg}")
@@ -466,7 +519,7 @@ def build_header_inputs():
             col_idx += 1
 
         if "Stacking/Conveyor" in application and load_weight_kg and max_stacking_height_m:
-            is_v, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, 320)
+            is_v, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, aisle_width_mm)
             with val_cols[col_idx]:
                 if color == "green":
                     st.success(f"**XQE122** ✅\n\n{msg}")
@@ -538,60 +591,36 @@ def build_header_inputs():
 
         if site_wifi_available == "Yes":
             st.info(
-                "Please refer to the following documents to check the latency and configuration required by AGVs, and to verify whether the full zone is covered."
+                "Please refer to the EP System Requirements document to verify AGV network, latency, and WiFi coverage requirements."
             )
-
-            wifi_col1, wifi_col2 = st.columns(2)
-
-            with wifi_col1:
-                if os.path.exists(WIFI_CHECKLIST_PDF):
-                    with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
-                        st.download_button(
-                            label="Download WiFi Checklist",
-                            data=pdf_file.read(),
-                            file_name=os.path.basename(WIFI_CHECKLIST_PDF),
-                            mime="application/pdf",
-                        )
-                else:
-                    st.info("WiFi checklist PDF not found.")
-
-            with wifi_col2:
-                if os.path.exists(WIFI_TESTING_PDF):
-                    with open(WIFI_TESTING_PDF, "rb") as pdf_file:
-                        st.download_button(
-                            label="Download WiFi Testing Procedure",
-                            data=pdf_file.read(),
-                            file_name=os.path.basename(WIFI_TESTING_PDF),
-                            mime="application/pdf",
-                        )
-                else:
-                    st.info("WiFi testing procedure PDF not found.")
-
+            if os.path.exists(SYSTEM_REQUIREMENTS_PDF):
+                with open(SYSTEM_REQUIREMENTS_PDF, "rb") as f:
+                    st.download_button(
+                        label="📄 Download EP System Requirements",
+                        data=f.read(),
+                        file_name=SYSTEM_REQUIREMENTS_PDF,
+                        mime="application/pdf",
+                        use_container_width=True,
+                    )
             network_status = st.text_area(
-                "Site Network Status / WiFi Coverage",
+                "Site Network Status / WiFi Coverage Notes",
                 height=80,
-                key="network_status"
+                key="network_status",
+                placeholder="e.g. Full coverage confirmed / partial coverage in zone B / survey pending",
             )
         else:
-            st.warning("WiFi is not available on site.")
-            st.info("Please talk to your IT team and share the WiFi checklist.")
-
-            if os.path.exists(WIFI_CHECKLIST_PDF):
-                with open(WIFI_CHECKLIST_PDF, "rb") as pdf_file:
+            st.warning("WiFi is not available on site. AGVs require a stable WiFi network to operate.")
+            st.info("Share the EP System Requirements document with the customer's IT team.")
+            if os.path.exists(SYSTEM_REQUIREMENTS_PDF):
+                with open(SYSTEM_REQUIREMENTS_PDF, "rb") as f:
                     st.download_button(
-                        label="Download WiFi Checklist",
-                        data=pdf_file.read(),
-                        file_name=os.path.basename(WIFI_CHECKLIST_PDF),
+                        label="📄 Download EP System Requirements",
+                        data=f.read(),
+                        file_name=SYSTEM_REQUIREMENTS_PDF,
                         mime="application/pdf",
+                        use_container_width=True,
                     )
-            else:
-                st.info("WiFi checklist PDF not found.")
-
-            network_status = st.text_area(
-                "Site Network Status / WiFi Coverage",
-                height=80,
-                key="network_status"
-            )
+            network_status = ""
 
     clearance_required = st.checkbox(
         "Is there any clearance under platform / obstacles?",
@@ -609,11 +638,35 @@ def build_header_inputs():
         )
 
     st.markdown("### Site Layout")
-    cad_file = st.file_uploader(
-        "Upload CAD file, floor plan, or layout drawing",
-        type=["dwg", "nwd", "pdf", "png", "jpg", "jpeg", "zip"],
-        key="cad_layout_file"
+    st.caption(
+        "Upload any combination of CAD drawings, floor plans, photos, or PDF layouts. "
+        "Supported: DWG, DXF, NWD, PDF, PNG, JPG, JPEG, TIFF, BMP, SVG, ZIP"
     )
+    cad_files = st.file_uploader(
+        "Upload site layout files (CAD, floor plan, images, PDF)",
+        type=["dwg", "dxf", "nwd", "pdf", "png", "jpg", "jpeg", "tiff", "tif", "bmp", "svg", "zip"],
+        key="cad_layout_file",
+        accept_multiple_files=True,
+    )
+
+    # Use first file as primary for backward-compat (cad_file key)
+    cad_file = cad_files[0] if cad_files else None
+
+    if cad_files:
+        st.markdown(f"**{len(cad_files)} file(s) uploaded:**")
+        preview_cols = st.columns(min(len(cad_files), 4))
+        for i, f in enumerate(cad_files):
+            with preview_cols[i % 4]:
+                ext = f.name.rsplit(".", 1)[-1].lower()
+                if ext in ("png", "jpg", "jpeg", "bmp", "tiff", "tif"):
+                    st.image(f, caption=f.name, use_container_width=True)
+                else:
+                    st.markdown(
+                        f"<div style='border:1px solid #d9d9e3;border-radius:8px;padding:14px;"
+                        f"text-align:center;font-size:12px;color:#555;'>"
+                        f"📄 {f.name}</div>",
+                        unsafe_allow_html=True,
+                    )
 
     return {
         "customer_name": customer_name,
@@ -661,4 +714,5 @@ def build_header_inputs():
         "clearance_required": clearance_required,
         "clearance_height_m": clearance_height_m,
         "cad_file": cad_file,
+        "cad_files": cad_files,
     }
