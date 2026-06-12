@@ -196,6 +196,12 @@ def _to_json_safe(value):
         return None
     if isinstance(value, bool):
         return value
+    # numpy 2.x scalars no longer subclass int/float — convert via .item()
+    if hasattr(value, "item") and callable(value.item) and not isinstance(value, (str, bytes)):
+        try:
+            return _to_json_safe(value.item())
+        except Exception:
+            pass
     if isinstance(value, int):
         return int(value)
     if isinstance(value, float):
@@ -209,6 +215,20 @@ def _to_json_safe(value):
     if isinstance(value, (list, tuple)):
         return [_to_json_safe(item) for item in value]
     return None
+
+
+def _json_fallback(obj):
+    """Last-resort JSON encoder for any type _to_json_safe didn't catch."""
+    if hasattr(obj, "item") and callable(obj.item):
+        try:
+            return obj.item()
+        except Exception:
+            pass
+    if hasattr(obj, "isoformat"):
+        return obj.isoformat()
+    if isinstance(obj, (bytes, bytearray)):
+        return None
+    return str(obj)
 
 
 def _is_forbidden_session_key(key: str) -> bool:
@@ -362,6 +382,10 @@ _INTERNAL_KEYS = {
     "zip_popup_open", "lang", "app_mode", "guided_step",
     "feedback_experience", "feedback_missing_questions", "feedback_improvements",
     "feedback_contact_needed", "feedback_comments", "agree_generate_report",
+    # Generated binary blobs — not restorable from a session file
+    "generated_cad_files", "generated_cad_file_bytes", "generated_cad_file_name",
+    "generated_conveyor_picture_bytes", "generated_conveyor_picture_name",
+    "generated_photos",
 }
 
 with st.sidebar:
@@ -393,7 +417,7 @@ with st.sidebar:
 
     st.download_button(
         t("save_session_btn"),
-        data=json.dumps(_save_data, ensure_ascii=False, indent=2),
+        data=json.dumps(_save_data, ensure_ascii=False, indent=2, default=_json_fallback),
         file_name="ep_session.json",
         mime="application/json",
         use_container_width=True,
