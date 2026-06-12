@@ -6,7 +6,6 @@ from io import BytesIO
 from datetime import datetime
 
 import streamlit as st
-import streamlit.components.v1 as components
 from docxtpl import DocxTemplate
 from translations import t, LANGUAGES
 
@@ -144,7 +143,7 @@ def zip_download_popup():
 
 def trigger_auto_download(file_bytes: bytes, filename: str, mime: str = "application/zip"):
     b64 = base64.b64encode(file_bytes).decode()
-    components.html(
+    st.iframe(
         f"""
         <html>
           <body>
