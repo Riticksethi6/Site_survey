@@ -157,7 +157,7 @@ def trigger_auto_download(file_bytes: bytes, filename: str, mime: str = "applica
           </body>
         </html>
         """,
-        height=0,
+        height=1,
     )
 
 
