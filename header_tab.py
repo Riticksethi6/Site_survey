@@ -476,7 +476,7 @@ def build_header_inputs():
                 st.warning("Above 900 kg, stacking height may need to be reduced. Please verify with engineering.")
 
     if "Transport / Cross Docking" in application and cross_docking_aisle:
-        is_valid, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg)
+        is_valid, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg, primary_pallet.get("pallet_type", ""))
         if color == "red":
             st.error(msg)
         elif color == "orange":
@@ -485,7 +485,7 @@ def build_header_inputs():
             st.success(msg)
 
     if "Stacking/Conveyor" in application and load_weight_kg and max_stacking_height_m:
-        is_valid, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, 320)
+        is_valid, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, aisle_width_mm)
         if color == "red":
             st.error(msg)
         elif color == "orange":
