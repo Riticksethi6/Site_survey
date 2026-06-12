@@ -191,6 +191,26 @@ def _to_float(value):
         return 0.0
 
 
+def _to_json_safe(value):
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return int(value)
+    if isinstance(value, float):
+        return float(value)
+    if isinstance(value, str):
+        return value
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(k): _to_json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_json_safe(item) for item in value]
+    return None
+
+
 def _is_forbidden_session_key(key: str) -> bool:
     forbidden_prefixes = [
         "download_",
@@ -363,14 +383,13 @@ with st.sidebar:
 
     st.divider()
 
-    _save_data = {
-        k: (v.isoformat() if hasattr(v, "isoformat") else v)
-        for k, v in st.session_state.items()
-        if k not in _INTERNAL_KEYS
-        and not k.startswith("_")
-        and not _is_forbidden_session_key(k)
-        and isinstance(v, (str, int, float, bool, list, type(None)))
-    }
+    _save_data = {}
+    for _k, _v in st.session_state.items():
+        if _k in _INTERNAL_KEYS or _k.startswith("_") or _is_forbidden_session_key(_k):
+            continue
+        _safe = _to_json_safe(_v)
+        if _safe is not None or _v is None:
+            _save_data[_k] = _safe
 
     st.download_button(
         t("save_session_btn"),
