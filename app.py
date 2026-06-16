@@ -21,7 +21,7 @@ XPL_PDF_CANDIDATES = [
 RESOURCES = [
     (
         "XQE122 Layout Requirements",
-        "1.1_Layout_Requirment_XQE.docx",
+        "1.1_Layout_Requirment_XQE_.pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "Aisle planning, clearances, floor stacking and rack stacking specifications for the XQE122 stacking AMR.",
         "📐",
