@@ -591,8 +591,6 @@ for _section, _items in RESOURCES.items():
                 st.caption("📋 Coming soon")
             _dl_idx += 1
 
-    _col_idx += 1
-
 st.markdown("### Generate Report")
 st.info(
     "By generating the report, you agree that if any changes are required in the layout, "
