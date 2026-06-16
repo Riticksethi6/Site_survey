@@ -17,45 +17,52 @@ XPL_PDF_CANDIDATES = [
     "1.9_XPL_Layout_Planning_Specification.pdf",
 ]
 
-# Resource catalogue — each entry: (label, filename, mime, description, icon)
-RESOURCES = [
-    (
-        "XQE122 Layout Requirements",
-        "1.1_Layout_Requirment_XQE_.pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Aisle planning, clearances, floor stacking and rack stacking specifications for the XQE122 stacking AMR.",
-        "📐",
-    ),
-    (
-        "XNA Layout Requirements (Draft)",
-        "1.3_Layout_Requirment_XNA.docx",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Draft layout and aisle planning specification for XNA121 / XNA151 narrow-aisle AMRs.",
-        "📐",
-    ),
-    (
-        "XQE122 Customer White Book",
-        "XQE122 CE White book R1.1 AK 2026-05-28 - external.pdf",
-        "application/pdf",
-        "Complete customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
-        "📖",
-    ),
-    (
-        "EP System Requirements",
-        "5_System Requirments.pdf",
-        "application/pdf",
-        "Network, WiFi, IT infrastructure and connectivity requirements for EP AGV fleet deployment.",
-        "🛜",
-    ),
-    (
-        "XPL201 Layout Planning Specification",
-        None,  # resolved at runtime from candidates
-        "application/pdf",
-        "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
-        "📐",
-        "XPL_PDF_CANDIDATES",
-    ),
-]
+# Resource catalogue grouped by section.
+# Each entry: (label, filename, mime, description, icon [, candidate_key])
+RESOURCES = {
+    "Layout References": [
+        (
+            "XQE122 Layout Requirements",
+            "1.1_Layout_Requirment_XQE_.pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "Aisle planning, clearances, floor stacking and rack stacking specifications for the XQE122 stacking AMR.",
+            "📐",
+        ),
+        (
+            "XNA Layout Requirements (Draft)",
+            "1.3_Layout_Requirment_XNA.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "Draft layout and aisle planning specification for XNA121 / XNA151 narrow-aisle AMRs.",
+            "📐",
+        ),
+        (
+            "XPL201 Layout Planning Specification",
+            None,  # resolved at runtime from candidates
+            "application/pdf",
+            "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
+            "📐",
+            "XPL_PDF_CANDIDATES",
+        ),
+    ],
+    "White Books": [
+        (
+            "XQE122 Customer White Book",
+            "XQE122 CE White book R1.1 AK 2026-05-28 - external.pdf",
+            "application/pdf",
+            "Complete customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
+            "📖",
+        ),
+    ],
+    "System Requirements": [
+        (
+            "EP System Requirements",
+            "5_System Requirments.pdf",
+            "application/pdf",
+            "Network, WiFi, IT infrastructure and connectivity requirements for EP AGV fleet deployment.",
+            "🛜",
+        ),
+    ],
+}
 
 
 def find_existing_file(candidates):
@@ -543,45 +550,46 @@ all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if dista
 st.header("📚 Resources & Reference Documents")
 st.caption("Download technical specifications, layout guides, and customer documents for EP equipment.")
 
-_res_cols = st.columns(3)
-_col_idx = 0
+_dl_idx = 0
+for _section, _items in RESOURCES.items():
+    st.markdown(f"**{_section}**")
+    _res_cols = st.columns(3)
+    for _col_pos, _res in enumerate(_items):
+        _label = _res[0]
+        _fname = _res[1]
+        _mime = _res[2]
+        _desc = _res[3]
+        _icon = _res[4]
+        _candidate_key = _res[5] if len(_res) > 5 else None
 
-for _res in RESOURCES:
-    _label = _res[0]
-    _fname = _res[1]
-    _mime = _res[2]
-    _desc = _res[3]
-    _icon = _res[4]
-    _candidate_key = _res[5] if len(_res) > 5 else None
+        if _candidate_key == "XPL_PDF_CANDIDATES":
+            _fname = find_existing_file(XPL_PDF_CANDIDATES)
 
-    # Resolve candidate list for XPL
-    if _candidate_key == "XPL_PDF_CANDIDATES":
-        _fname = find_existing_file(XPL_PDF_CANDIDATES)
-
-    with _res_cols[_col_idx % 3]:
-        st.markdown(
-            f"""
-            <div style="border:1px solid #e0e0e0;border-radius:12px;padding:16px 14px 10px 14px;
-                        background:#fafafa;min-height:140px;margin-bottom:8px;">
-              <div style="font-size:28px;margin-bottom:6px;">{_icon}</div>
-              <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1a1a2e;">{_label}</div>
-              <div style="font-size:12px;color:#555;margin-bottom:10px;">{_desc}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if _fname and os.path.exists(_fname):
-            with open(_fname, "rb") as _f:
-                st.download_button(
-                    label=f"Download",
-                    data=_f.read(),
-                    file_name=os.path.basename(_fname),
-                    mime=_mime,
-                    use_container_width=True,
-                    key=f"res_dl_{_col_idx}",
-                )
-        else:
-            st.caption("📋 Coming soon")
+        with _res_cols[_col_pos]:
+            st.markdown(
+                f"""
+                <div style="border:1px solid #e0e0e0;border-radius:12px;padding:16px 14px 10px 14px;
+                            background:#fafafa;min-height:140px;margin-bottom:8px;">
+                  <div style="font-size:28px;margin-bottom:6px;">{_icon}</div>
+                  <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1a1a2e;">{_label}</div>
+                  <div style="font-size:12px;color:#555;margin-bottom:10px;">{_desc}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if _fname and os.path.exists(_fname):
+                with open(_fname, "rb") as _f:
+                    st.download_button(
+                        label="Download",
+                        data=_f.read(),
+                        file_name=os.path.basename(_fname),
+                        mime=_mime,
+                        use_container_width=True,
+                        key=f"res_dl_{_dl_idx}",
+                    )
+            else:
+                st.caption("📋 Coming soon")
+            _dl_idx += 1
 
     _col_idx += 1
 
