@@ -74,8 +74,24 @@ def find_existing_file(candidates):
 
 @st.dialog("ZIP download started")
 def zip_download_popup():
-    st.success("Your ZIP download has started automatically.")
-    st.write("If the browser blocks the automatic download, use the fallback download button below.")
+    st.success("✅ Your ZIP report has been downloaded successfully.")
+    st.markdown(
+        """
+        <div style="background:linear-gradient(135deg,#1a73e8,#0b5394);border-radius:12px;
+                    padding:18px 22px;margin:12px 0;text-align:center;">
+          <div style="font-size:22px;margin-bottom:6px;">📩</div>
+          <div style="color:white;font-weight:700;font-size:16px;margin-bottom:4px;">
+            Share this report with the EP EU Team
+          </div>
+          <div style="color:#cfe2ff;font-size:13px;">
+            Please email the downloaded ZIP to your EP Equipment contact so the team<br>
+            can review the requirements and prepare your solution proposal.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.caption("If the browser blocked the automatic download, use the fallback download button below.")
 
 
 def trigger_auto_download(file_bytes: bytes, filename: str, mime: str = "application/zip"):
@@ -489,7 +505,7 @@ for _section, _items in RESOURCES.items():
         if _candidate_key == "XPL_PDF_CANDIDATES":
             _fname = find_existing_file(XPL_PDF_CANDIDATES)
 
-        with _res_cols[_col_pos]:
+        with _res_cols[_col_pos % 3]:
             st.markdown(
                 f"""
                 <div style="border:1px solid #e0e0e0;border-radius:12px;padding:16px 14px 10px 14px;

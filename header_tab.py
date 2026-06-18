@@ -249,8 +249,8 @@ def build_header_inputs():
 
         cross_docking_aisle = st.number_input(
             "Aisle Width in Operation Zone [m]",
-            min_value=1.8,
-            value=max(1.8, float(st.session_state.get("cross_docking_aisle", 1.8) or 1.8)),
+            min_value=0.0,
+            value=float(st.session_state.get("cross_docking_aisle", 1.8) or 1.8),
             step=0.1,
             key="cross_docking_aisle"
         )
