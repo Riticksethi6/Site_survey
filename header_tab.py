@@ -145,7 +145,7 @@ def build_header_inputs():
             placeholder=t("ph_project_location"),
             key="project_location",
         )
-        survey_date = st.date_input(t("field_survey_date"), datetime.today(), key="survey_date")
+        survey_date = st.date_input(t("field_survey_date"), datetime.today().date(), key="survey_date")
         warehouse_area = st.text_input(
             t("field_warehouse_area"),
             placeholder=t("ph_warehouse_area"),
