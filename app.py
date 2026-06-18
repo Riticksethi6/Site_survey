@@ -24,7 +24,7 @@ RESOURCES = {
         (
             "XQE122 Layout Requirements",
             "1.1_Layout_Requirment_XQE_.pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/pdf",
             "Aisle planning, clearances, floor stacking and rack stacking specifications for the XQE122 stacking AMR.",
             "📐",
         ),
@@ -72,85 +72,16 @@ def find_existing_file(candidates):
     return None
 
 
-def build_feedback_text(feedback_data: dict) -> str:
-    return f"""EP Equipment Site Survey Feedback
-
-Overall experience: {feedback_data.get('experience', '')}
-Were any important questions missing?: {feedback_data.get('missing_questions', '')}
-What should we improve?: {feedback_data.get('improvements', '')}
-Would you like EP team to contact you?: {feedback_data.get('contact_needed', '')}
-Additional comments: {feedback_data.get('comments', '')}
-"""
-
-
-@st.dialog("Help us improve")
-def feedback_dialog():
-    st.write("Please share quick feedback before downloading the final ZIP.")
-
-    experience = st.selectbox(
-        "Overall experience",
-        ["Excellent", "Good", "Average", "Poor"],
-        key="feedback_experience",
-    )
-
-    missing_questions = st.text_area(
-        "Were any important questions missing?",
-        placeholder="Write any missing question or information that should be added.",
-        key="feedback_missing_questions",
-    )
-
-    improvements = st.text_area(
-        "What should we improve?",
-        placeholder="Tell us what can be improved in the interface or report.",
-        key="feedback_improvements",
-    )
-
-    contact_needed = st.radio(
-        "Would you like EP team to contact you?",
-        ["No", "Yes"],
-        horizontal=True,
-        key="feedback_contact_needed",
-    )
-
-    comments = st.text_area(
-        "Additional comments",
-        placeholder="Any extra comments",
-        key="feedback_comments",
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("Submit Feedback", key="submit_feedback_btn", type="primary"):
-            st.session_state["generated_feedback"] = {
-                "experience": experience,
-                "missing_questions": missing_questions,
-                "improvements": improvements,
-                "contact_needed": contact_needed,
-                "comments": comments,
-            }
-            st.session_state["feedback_saved"] = True
-            st.session_state["feedback_popup_done"] = True
-            st.rerun()
-
-    with col2:
-        if st.button("Skip Feedback", key="skip_feedback_btn"):
-            st.session_state["generated_feedback"] = None
-            st.session_state["feedback_saved"] = False
-            st.session_state["feedback_popup_done"] = True
-            st.rerun()
-
-
 @st.dialog("ZIP download started")
 def zip_download_popup():
     st.success("Your ZIP download has started automatically.")
-    st.info("Please email this ZIP to: ritick.sethi@ep-equipment.eu")
     st.write("If the browser blocks the automatic download, use the fallback download button below.")
 
 
 def trigger_auto_download(file_bytes: bytes, filename: str, mime: str = "application/zip"):
     b64 = base64.b64encode(file_bytes).decode()
-    st.iframe(
+    import streamlit.components.v1 as components
+    components.html(
         f"""
         <html>
           <body>
@@ -368,10 +299,6 @@ for key, default in {
     "generated_report_buffer": None,
     "generated_safe_name": "customer",
     "generated_timestamp": "",
-    "generated_feedback": None,
-    "feedback_saved": False,
-    "feedback_popup_done": False,
-    "feedback_popup_open": False,
     "auto_zip_download_done": False,
     "zip_popup_open": False,
     "lang": "en",
@@ -383,11 +310,8 @@ for key, default in {
 
 _INTERNAL_KEYS = {
     "report_ready", "generated_report_buffer", "generated_safe_name",
-    "generated_timestamp", "generated_feedback", "feedback_saved",
-    "feedback_popup_done", "feedback_popup_open", "auto_zip_download_done",
-    "zip_popup_open", "lang", "app_mode", "guided_step",
-    "feedback_experience", "feedback_missing_questions", "feedback_improvements",
-    "feedback_contact_needed", "feedback_comments", "agree_generate_report",
+    "generated_timestamp", "auto_zip_download_done", "zip_popup_open",
+    "lang", "app_mode", "guided_step", "agree_generate_report",
     # Generated binary blobs — not restorable from a session file
     "generated_cad_files", "generated_cad_file_bytes", "generated_cad_file_name",
     "generated_conveyor_picture_bytes", "generated_conveyor_picture_name",
@@ -1008,10 +932,6 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             st.session_state["generated_photos"] = generated_photos
             st.session_state["generated_safe_name"] = safe_name
             st.session_state["generated_timestamp"] = timestamp
-            st.session_state["generated_feedback"] = None
-            st.session_state["feedback_saved"] = False
-            st.session_state["feedback_popup_done"] = False
-            st.session_state["feedback_popup_open"] = True
             st.session_state["auto_zip_download_done"] = False
             st.session_state["zip_popup_open"] = False
             st.session_state["report_ready"] = True
@@ -1042,11 +962,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             status_text.text("Failed.")
             st.error(f"Error during report generation: {str(e)}")
 
-if st.session_state.get("report_ready") and st.session_state.get("feedback_popup_open"):
-    st.session_state["feedback_popup_open"] = False
-    feedback_dialog()
-
-if st.session_state.get("report_ready") and st.session_state.get("feedback_popup_done"):
+if st.session_state.get("report_ready"):
     report_bytes = st.session_state.get("generated_report_buffer")
     cad_file_bytes = st.session_state.get("generated_cad_file_bytes")
     cad_file_name = st.session_state.get("generated_cad_file_name", "")
@@ -1057,7 +973,6 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
     photos = st.session_state.get("generated_photos", [])
     safe_name = st.session_state.get("generated_safe_name", "customer")
     timestamp = st.session_state.get("generated_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
-    feedback_data = st.session_state.get("generated_feedback")
 
     final_zip_buffer = BytesIO()
     docx_filename = f"site_survey_{safe_name}_{timestamp}.docx"
@@ -1082,9 +997,6 @@ if st.session_state.get("report_ready") and st.session_state.get("feedback_popup
                     zip_file.writestr(f"layouts/{_cf['name']}", _cf["bytes"])
         elif cad_file_bytes and cad_file_name:
             zip_file.writestr(cad_file_name, cad_file_bytes)
-
-        if feedback_data:
-            zip_file.writestr("feedback.txt", build_feedback_text(feedback_data))
 
     final_zip_buffer.seek(0)
     final_zip_bytes = final_zip_buffer.getvalue()
