@@ -34,6 +34,8 @@ RESOURCES = {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "Draft layout and aisle planning specification for XNA121 / XNA151 narrow-aisle AMRs.",
             "📐",
+            None,
+            True,  # coming_soon
         ),
         (
             "XPL201 Layout Planning Specification (Draft)",
@@ -42,6 +44,7 @@ RESOURCES = {
             "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
             "📐",
             "XPL_PDF_CANDIDATES",
+            True,  # coming_soon
         ),
     ],
     "White Books": [
@@ -508,6 +511,7 @@ for _section, _items in RESOURCES.items():
         _desc = _res[3]
         _icon = _res[4]
         _candidate_key = _res[5] if len(_res) > 5 else None
+        _coming_soon = _res[6] if len(_res) > 6 else False
 
         if _candidate_key == "XPL_PDF_CANDIDATES":
             _fname = find_existing_file(XPL_PDF_CANDIDATES)
@@ -524,7 +528,9 @@ for _section, _items in RESOURCES.items():
                 """,
                 unsafe_allow_html=True,
             )
-            if _fname and os.path.exists(_fname):
+            if _coming_soon:
+                st.caption("🔜 Coming soon")
+            elif _fname and os.path.exists(_fname):
                 with open(_fname, "rb") as _f:
                     st.download_button(
                         label="Download",
