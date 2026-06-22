@@ -36,7 +36,7 @@ RESOURCES = {
             "📐",
         ),
         (
-            "XPL201 Layout Planning Specification",
+            "XPL201 Layout Planning Specification (Draft)",
             None,  # resolved at runtime from candidates
             "application/pdf",
             "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
@@ -60,6 +60,13 @@ RESOURCES = {
             "application/pdf",
             "Network, WiFi, IT infrastructure and connectivity requirements for EP AGV fleet deployment.",
             "🛜",
+        ),
+        (
+            "AGV Pallet Compatibility Reference",
+            "2_AGV - Pallet Compatibility Reference.pdf",
+            "application/pdf",
+            "Pallet and load compatibility requirements for XQE / XPL / XNA / XSC AGV models — covers transport, stacking, custom sizes, and load condition checks.",
+            "🪵",
         ),
     ],
 }
