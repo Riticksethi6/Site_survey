@@ -145,7 +145,13 @@ def build_header_inputs():
             placeholder=t("ph_project_location"),
             key="project_location",
         )
-        survey_date = st.date_input(t("field_survey_date"), datetime.today(), key="survey_date")
+        _sd = st.session_state.get("survey_date")
+        if isinstance(_sd, str):
+            try:
+                st.session_state["survey_date"] = datetime.strptime(_sd, "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                st.session_state["survey_date"] = datetime.today().date()
+        survey_date = st.date_input(t("field_survey_date"), datetime.today().date(), key="survey_date")
         warehouse_area = st.text_input(
             t("field_warehouse_area"),
             placeholder=t("ph_warehouse_area"),
@@ -243,8 +249,8 @@ def build_header_inputs():
 
         cross_docking_aisle = st.number_input(
             "Aisle Width in Operation Zone [m]",
-            min_value=1.8,
-            value=max(1.8, float(st.session_state.get("cross_docking_aisle", 1.8) or 1.8)),
+            min_value=0.0,
+            value=float(st.session_state.get("cross_docking_aisle", 1.8) or 1.8),
             step=0.1,
             key="cross_docking_aisle"
         )
