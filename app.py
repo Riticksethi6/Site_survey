@@ -44,6 +44,7 @@ RESOURCES = {
             "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
             "📐",
             "XPL_PDF_CANDIDATES",
+            True,  # coming_soon
         ),
     ],
     "White Books": [
