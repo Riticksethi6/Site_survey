@@ -49,7 +49,7 @@ RESOURCES = {
     "White Books": [
         (
             "XQE122 Customer White Book",
-            "XQE122 CE White book R1.1 AK 2026-05-28 - external.pdf",
+            "XQE122 CE White book Extern.pdf",
             "application/pdf",
             "Complete customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
             "📖",
