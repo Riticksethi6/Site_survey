@@ -44,7 +44,6 @@ RESOURCES = {
             "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
             "📐",
             "XPL_PDF_CANDIDATES",
-            True,  # coming_soon
         ),
     ],
     "White Books": [
@@ -53,6 +52,13 @@ RESOURCES = {
             "XQE122 CE White book R1.1 AK 2026-05-28 - external.pdf",
             "application/pdf",
             "Complete customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
+            "📖",
+        ),
+        (
+            "XPL201 Customer White Book",
+            "XPL201 CE White book Extern.pdf",
+            "application/pdf",
+            "Complete customer-facing technical reference for the XPL201: features, specs, operation, and safety.",
             "📖",
         ),
     ],
