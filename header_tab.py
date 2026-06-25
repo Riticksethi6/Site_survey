@@ -88,7 +88,7 @@ def _apply_smart_defaults(application: list):
         if st.session_state.get("load_weight_kg", 0) == 0:
             st.session_state["load_weight_kg"] = 1000
             defaults_applied = True
-        if st.session_state.get("max_stacking_height_m", 0.0) == 0.0:
+        if "max_stacking_height_m" not in st.session_state:
             st.session_state["max_stacking_height_m"] = 3.5
             defaults_applied = True
         if st.session_state.get("aisle_width_mm", 0) == 0:
@@ -102,7 +102,7 @@ def _apply_smart_defaults(application: list):
         if st.session_state.get("aisle_width_m", 0.0) == 0.0:
             st.session_state["aisle_width_m"] = 1.8
             defaults_applied = True
-        if st.session_state.get("max_stacking_height_m", 0.0) == 0.0:
+        if "max_stacking_height_m" not in st.session_state:
             st.session_state["max_stacking_height_m"] = 6.0
             defaults_applied = True
 
