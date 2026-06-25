@@ -38,7 +38,8 @@ PRODUCT_SPECS = {
         "load_capacity": {
             "1200_kg_max_height_m": 4.5,
             "1500_kg_max_height_m": 3.5,
-            "absolute_max_height_m": 5.5
+            "absolute_max_height_m": 5.5,
+            "absolute_min_height_m": 0
         },
         "aisle_requirements": {
             "straight_one_way": 2.5,
