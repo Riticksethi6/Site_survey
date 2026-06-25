@@ -414,9 +414,19 @@ def build_header_inputs():
         )
 
     if "Stacking/Conveyor" in application or "Narrow Aisle" in application:
+        _height_max = 5.5 if "Stacking/Conveyor" in application else 0.0
+        if "Narrow Aisle" in application:
+            _xna_max = 13.0 if "XNA151" in (xna_model or "") else 8.5
+            _height_max = max(_height_max, _xna_max)
+
+        _cur = float(st.session_state.get("max_stacking_height_m") or 0.0)
+        if _cur > _height_max:
+            st.session_state["max_stacking_height_m"] = _height_max
+
         max_stacking_height_m = st.number_input(
             "Maximum Stacking Height [m]",
             min_value=0.0,
+            max_value=_height_max,
             value=0.0,
             step=0.1,
             key="max_stacking_height_m"
