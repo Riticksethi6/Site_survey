@@ -419,15 +419,15 @@ def build_header_inputs():
             _xna_max = 13.0 if "XNA151" in (xna_model or "") else 8.5
             _height_max = max(_height_max, _xna_max)
 
-        _cur = float(st.session_state.get("max_stacking_height_m") or 0.0)
-        if _cur > _height_max:
-            st.session_state["max_stacking_height_m"] = _height_max
+        _cur = min(float(st.session_state.get("max_stacking_height_m") or 0.0), _height_max)
+        if st.session_state.get("max_stacking_height_m") != _cur:
+            st.session_state["max_stacking_height_m"] = _cur
 
         max_stacking_height_m = st.number_input(
             "Maximum Stacking Height [m]",
             min_value=0.0,
             max_value=_height_max,
-            value=0.0,
+            value=_cur,
             step=0.1,
             key="max_stacking_height_m"
         )
