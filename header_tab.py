@@ -432,6 +432,29 @@ def build_header_inputs():
             key="max_stacking_height_m"
         )
 
+        # Dynamic range hint
+        _range_parts = []
+        if "Stacking/Conveyor" in application:
+            if load_weight_kg > 1200:
+                _range_parts.append("XQE: 0.1 – 3.5 m (load > 1200 kg)")
+            elif load_weight_kg > 900:
+                _range_parts.append("XQE: 0.1 – 4.5 m (load > 900 kg)")
+            else:
+                _range_parts.append("XQE: 0.1 – 5.5 m")
+        if "Narrow Aisle" in application:
+            if "XNA151" in (xna_model or ""):
+                _range_parts.append("XNA151: 0.1 – 13.0 m")
+            else:
+                _range_parts.append("XNA121: 0.1 – 8.5 m")
+        if _range_parts:
+            st.markdown(
+                '<div style="background:#eef6fb;border-left:4px solid #2196F3;padding:5px 10px;'
+                'border-radius:4px;font-size:0.88em;margin-top:-8px;">'
+                "📏 <b>Select a range:</b> " + " &nbsp;|&nbsp; ".join(_range_parts) +
+                "</div>",
+                unsafe_allow_html=True,
+            )
+
         load_height_m = _parse_load_height_m(primary_pallet["load_dimensions"])
         auto_level = ""
 
