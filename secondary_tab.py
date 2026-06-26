@@ -144,9 +144,10 @@ You can create as many steps as needed. The next-step options are guided by the 
             )
 
         source_image = st.file_uploader(
-            f"Upload Image / Layout for {source_step} → {target_step}",
+            f"Upload Image(s) / Layout for {source_step} → {target_step}",
             type=["jpg", "jpeg", "png", "pdf"],
             key=f"route_source_image_{i}",
+            accept_multiple_files=True,
         )
 
         route = {
@@ -212,9 +213,10 @@ You can create as many steps as needed. The next-step options are guided by the 
     )
 
     cad_file = st.file_uploader(
-        "Upload CAD / Layout File",
+        "Upload CAD / Layout File(s)",
         type=["pdf", "dwg", "dxf", "png", "jpg", "jpeg"],
         key="cad_file",
+        accept_multiple_files=True,
     )
 
     return {

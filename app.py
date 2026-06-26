@@ -350,7 +350,7 @@ _INTERNAL_KEYS = {
     # Generated binary blobs — not restorable from a session file
     "generated_cad_files", "generated_cad_file_bytes", "generated_cad_file_name",
     "generated_conveyor_picture_bytes", "generated_conveyor_picture_name",
-    "generated_photos",
+    "generated_conveyor_pictures", "generated_photos",
 }
 
 with st.sidebar:
@@ -610,13 +610,21 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 context["load_dimensions"] = ""
                 context["pallet_width_mm"] = ""
 
-            cad_file = all_data.get("cad_file")
-            cad_files = all_data.get("cad_files") or ([cad_file] if cad_file else [])
-            conveyor_picture = all_data.get("conveyor_picture")
+            # cad_files from header tab (already a list)
+            _header_cad_files = all_data.get("cad_files") or []
+            # cad_file from secondary/material-flow tab (now a list)
+            _secondary_cad_raw = all_data.get("cad_file")
+            _secondary_cad_files = _secondary_cad_raw if isinstance(_secondary_cad_raw, list) else ([_secondary_cad_raw] if _secondary_cad_raw else [])
+            cad_files = _header_cad_files + _secondary_cad_files
+            cad_file = cad_files[0] if cad_files else None
+            # conveyor_picture is now a list
+            conveyor_picture = all_data.get("conveyor_picture") or []
+            if not isinstance(conveyor_picture, list):
+                conveyor_picture = [conveyor_picture] if conveyor_picture else []
             photos = material_flow_data.get("photos", [])
 
             context["cad_filename"] = ", ".join(f.name for f in cad_files) if cad_files else ""
-            context["conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
+            context["conveyor_picture_name"] = ", ".join(f.name for f in conveyor_picture) if conveyor_picture else ""
             job_to_do_val = material_flow_data.get("job_to_do_flow") or all_data.get("task_description", "")
             context["job_to_do"] = job_to_do_val
 
@@ -831,10 +839,10 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             context["material_flow_display_text"] = "\n".join(mf_lines)
 
             cad_lines = []
-            if cad_file:
-                cad_lines.append(f"CAD / layout file attached: {cad_file.name}")
+            if cad_files:
+                cad_lines.append(f"CAD / layout file(s) attached: {', '.join(f.name for f in cad_files)}")
             if conveyor_picture:
-                cad_lines.append(f"Conveyor picture attached: {conveyor_picture.name}")
+                cad_lines.append(f"Conveyor picture(s) attached: {', '.join(f.name for f in conveyor_picture)}")
             context["cad_info_text"] = "\n".join(cad_lines)
 
             cp_lines = []
@@ -966,16 +974,24 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             st.session_state["generated_cad_file_bytes"] = cad_file.getvalue() if cad_file else None
             st.session_state["generated_cad_file_name"] = cad_file.name if cad_file else ""
 
-            st.session_state["generated_conveyor_picture_bytes"] = conveyor_picture.getvalue() if conveyor_picture else None
-            st.session_state["generated_conveyor_picture_name"] = conveyor_picture.name if conveyor_picture else ""
+            st.session_state["generated_conveyor_pictures"] = [
+                {"name": f.name, "bytes": f.getvalue()} for f in conveyor_picture
+            ]
+            _first_cp = conveyor_picture[0] if conveyor_picture else None
+            st.session_state["generated_conveyor_picture_bytes"] = _first_cp.getvalue() if _first_cp else None
+            st.session_state["generated_conveyor_picture_name"] = _first_cp.name if _first_cp else ""
 
             generated_photos = []
-            for photo in photos:
-                if photo:
-                    generated_photos.append({
-                        "name": photo.name,
-                        "bytes": photo.getvalue(),
-                    })
+            for photo_entry in photos:
+                if not photo_entry:
+                    continue
+                file_list = photo_entry if isinstance(photo_entry, list) else [photo_entry]
+                for photo in file_list:
+                    if photo:
+                        generated_photos.append({
+                            "name": photo.name,
+                            "bytes": photo.getvalue(),
+                        })
             st.session_state["generated_photos"] = generated_photos
             st.session_state["generated_safe_name"] = safe_name
             st.session_state["generated_timestamp"] = timestamp
@@ -1034,7 +1050,12 @@ if st.session_state.get("report_ready"):
                 original_name = photo.get("name", f"material_flow_photo_{i+1}.png")
                 zip_file.writestr(original_name, photo["bytes"])
 
-        if conveyor_picture_bytes and conveyor_picture_name:
+        _conveyor_pics = st.session_state.get("generated_conveyor_pictures") or []
+        if _conveyor_pics:
+            for _cp in _conveyor_pics:
+                if _cp.get("bytes") and _cp.get("name"):
+                    zip_file.writestr(_cp["name"], _cp["bytes"])
+        elif conveyor_picture_bytes and conveyor_picture_name:
             zip_file.writestr(conveyor_picture_name, conveyor_picture_bytes)
 
         _cad_files = st.session_state.get("generated_cad_files") or []

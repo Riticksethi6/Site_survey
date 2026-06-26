@@ -281,10 +281,18 @@ def build_header_inputs():
             )
 
             conveyor_picture = st.file_uploader(
-                "Upload Conveyor Picture",
+                "Upload Conveyor Picture(s)",
                 type=["jpg", "jpeg", "png", "pdf"],
-                key="conveyor_picture"
+                key="conveyor_picture",
+                accept_multiple_files=True,
             )
+            if conveyor_picture:
+                for _cp in conveyor_picture:
+                    _ext = _cp.name.rsplit(".", 1)[-1].lower()
+                    if _ext in ("png", "jpg", "jpeg"):
+                        st.image(_cp, caption=_cp.name, use_container_width=True)
+                    else:
+                        st.caption(f"Uploaded: {_cp.name}")
 
             load_at_edge = st.radio(
                 "Does the pallet arrive at the edge of the conveyor?",
