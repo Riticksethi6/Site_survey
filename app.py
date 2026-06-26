@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import zipfile
 import base64
@@ -213,6 +214,7 @@ def _is_forbidden_session_key(key: str) -> bool:
         "cad_layout_file",
         "conveyor_picture",
         "cad_file",
+        "load_session_btn",
     }
 
     if key in forbidden_exact:
@@ -378,10 +380,19 @@ with st.sidebar:
         if _safe is not None or _v is None:
             _save_data[_k] = _safe
 
+    _session_name_raw = st.text_input(
+        "Session file name",
+        value=st.session_state.get("_session_file_name", "ep_session"),
+        placeholder="e.g. Ritick or CustomerABC",
+        key="_session_name_input",
+    )
+    st.session_state["_session_file_name"] = _session_name_raw
+    _session_filename = re.sub(r"[^\w\-]", "_", _session_name_raw.strip()) or "ep_session"
+
     st.download_button(
         t("save_session_btn"),
         data=json.dumps(_save_data, ensure_ascii=False, indent=2, default=_json_fallback),
-        file_name="ep_session.json",
+        file_name=f"{_session_filename}.json",
         mime="application/json",
         use_container_width=True,
     )
