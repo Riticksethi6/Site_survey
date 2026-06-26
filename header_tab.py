@@ -163,11 +163,12 @@ def build_header_inputs():
     pallets = [_build_pallet_block(1)]
 
     if add_multiple_pallets:
+        if "num_additional_pallets" not in st.session_state:
+            st.session_state["num_additional_pallets"] = 1
         num_additional = st.number_input(
             "Number of Additional Pallets",
             min_value=1,
             max_value=5,
-            value=1,
             step=1,
             key="num_additional_pallets"
         )
