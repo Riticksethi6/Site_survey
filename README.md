@@ -23,7 +23,7 @@ Built to help sales engineers collect customer requirements on-site, validate pr
 
 ## Products covered
 
-| Product | Application | Max Weight | Max Height | Min Aisle |
+| Application | Max Weight | Max Height | Min Aisle |
 |---|---|---|---|
 | Transport / Cross Docking | 2000 kg | Floor level | 1.5 m |
 | Stacking / Conveyor | 1500 kg | 5.5 m | 2900 mm |
