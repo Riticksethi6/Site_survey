@@ -11,7 +11,6 @@ from docxtpl import DocxTemplate
 from translations import t, LANGUAGES
 
 TEMPLATE_PATH = "template.docx"
-LOGO_PATH = "Picture2.png"
 
 XPL_PDF_CANDIDATES = [
     "1.9_XPL_Layout_planning_Specification.pdf",
@@ -50,33 +49,33 @@ RESOURCES = {
     ],
     "White Books": [
         (
-            "XQE122 Customer White Book",
+            "XQE122 Technical Reference",
             "XQE122 CE White book Extern.pdf",
             "application/pdf",
-            "Complete customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
+            "Customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
             "📖",
         ),
         (
-            "XPL201 Customer White Book",
+            "XPL201 Technical Reference",
             "XPL201 CE White book Extern.pdf",
             "application/pdf",
-            "Complete customer-facing technical reference for the XPL201: features, specs, operation, and safety.",
+            "Customer-facing technical reference for the XPL201: features, specs, operation, and safety.",
             "📖",
         ),
     ],
     "System Requirements": [
         (
-            "EP System Requirements",
+            "AGV System Requirements",
             "5_System Requirments.pdf",
             "application/pdf",
-            "Network, WiFi, IT infrastructure and connectivity requirements for EP AGV fleet deployment.",
+            "Network, WiFi, IT infrastructure and connectivity requirements for AGV fleet deployment.",
             "🛜",
         ),
         (
             "AGV Pallet Compatibility Reference",
             "2_AGV - Pallet Compatibility Reference.pdf",
             "application/pdf",
-            "Pallet and load compatibility requirements for XQE / XPL / XNA / XSC AGV models — covers transport, stacking, custom sizes, and load condition checks.",
+            "Pallet and load compatibility requirements for XQE / XPL / XNA AGV models — covers transport, stacking, custom sizes, and load condition checks.",
             "🪵",
         ),
     ],
@@ -99,11 +98,11 @@ def zip_download_popup():
                     padding:18px 22px;margin:12px 0;text-align:center;">
           <div style="font-size:22px;margin-bottom:6px;">📩</div>
           <div style="color:white;font-weight:700;font-size:16px;margin-bottom:4px;">
-            Share this report with the EP EU Team
+            Share this report with your automation team
           </div>
           <div style="color:#cfe2ff;font-size:13px;">
-            Please email the downloaded ZIP to your EP Equipment contact so the team<br>
-            can review the requirements and prepare your solution proposal.
+            Please share the downloaded ZIP with your AGV / automation partner so they<br>
+            can review the site requirements and prepare the solution proposal.
           </div>
         </div>
         """,
@@ -327,7 +326,7 @@ def _build_operational_metrics(route_details):
     }
 
 
-st.set_page_config(page_title="EP Equipment – Smart Products Site Survey", layout="wide")
+st.set_page_config(page_title="Smart AGV Site Survey Tool", layout="wide")
 
 for key, default in {
     "report_ready": False,
@@ -435,14 +434,7 @@ with st.sidebar:
     _integ = st.session_state.get('integration_required') or _e
     st.markdown(f"🔗 **{t('sum_integration')}:** {_integ}")
 
-col_logo, col_title = st.columns([1, 5])
-
-with col_logo:
-    if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=220)
-
-with col_title:
-    st.title(t("app_title"))
+st.title(t("app_title"))
 
 st.markdown(t("app_subtitle"))
 
@@ -876,7 +868,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                     df_lines.append(all_data.get("connections_details"))
                 context["data_flow_display_text"] = "\n\n".join(df_lines)
             else:
-                context["data_flow_display_text"] = "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet"
+                context["data_flow_display_text"] = "WMS / DAS → Fleet Manager → AGV Fleet"
 
             status_text.text("Calculating recommendations...")
             progress_bar.progress(25)
@@ -947,7 +939,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             context["xpl_recommendation"] = "\n".join(xpl_rec_parts) if xpl_rec_parts else ""
 
             if all_data.get("ep_wms_used") == "Yes":
-                context["dasp_info"] = "EP WMS / DAS included as coordination layer above EP USP Fleet Manager."
+                context["dasp_info"] = "WMS / DAS included as coordination layer above the Fleet Manager."
             else:
                 context["dasp_info"] = ""
 

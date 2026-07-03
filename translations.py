@@ -14,7 +14,7 @@ LANGUAGES = {
 T = {
     "en": {
         # App shell
-        "app_title": "EP Equipment – Smart Products Site Survey",
+        "app_title": "Smart AGV Site Survey Tool",
         "app_subtitle": "Fill in the form → Get product recommendations → Generate & download report",
         "mode_label": "View mode",
         "mode_expert": "Expert (Tabs)",
@@ -84,7 +84,7 @@ T = {
         "sum_empty": "—",
     },
     "de": {
-        "app_title": "EP Equipment – Smart Products Site Survey",
+        "app_title": "Smart AGV Site Survey Tool",
         "app_subtitle": "Formular ausfüllen → Produktempfehlungen erhalten → Bericht erstellen & herunterladen",
         "mode_label": "Ansichtsmodus",
         "mode_expert": "Experte (Tabs)",
@@ -148,7 +148,7 @@ T = {
         "sum_empty": "—",
     },
     "fr": {
-        "app_title": "EP Equipment – Tableau de bord de visite de site",
+        "app_title": "Outil de visite de site AGV",
         "app_subtitle": "Remplir le formulaire → Obtenir des recommandations → Générer et télécharger le rapport",
         "mode_label": "Mode d'affichage",
         "mode_expert": "Expert (Onglets)",
@@ -214,7 +214,7 @@ T = {
 
     # ── Dutch ─────────────────────────────────────────────────────────────────
     "nl": {
-        "app_title": "EP Equipment – Smart Products Site Survey",
+        "app_title": "Smart AGV Site Survey Tool",
         "app_subtitle": "Vul het formulier in → Ontvang productaanbevelingen → Genereer & download rapport",
         "mode_label": "Weergavemodus",
         "mode_expert": "Expert (Tabbladen)",
@@ -280,7 +280,7 @@ T = {
 
     # ── Spanish ───────────────────────────────────────────────────────────────
     "es": {
-        "app_title": "EP Equipment – Panel de inspección del sitio",
+        "app_title": "Herramienta de inspección de sitio AGV",
         "app_subtitle": "Rellene el formulario → Obtenga recomendaciones → Genere y descargue el informe",
         "mode_label": "Modo de vista",
         "mode_expert": "Experto (Pestañas)",
@@ -346,7 +346,7 @@ T = {
 
     # ── Italian ───────────────────────────────────────────────────────────────
     "it": {
-        "app_title": "EP Equipment – Dashboard sopralluogo",
+        "app_title": "Strumento di sopralluogo AGV",
         "app_subtitle": "Compila il modulo → Ricevi raccomandazioni → Genera e scarica il report",
         "mode_label": "Modalità di visualizzazione",
         "mode_expert": "Esperto (Schede)",
@@ -412,7 +412,7 @@ T = {
 
     # ── Romanian ──────────────────────────────────────────────────────────────
     "ro": {
-        "app_title": "EP Equipment – Chestionar de inspecție a amplasamentului",
+        "app_title": "Instrument de inspecție amplasament AGV",
         "app_subtitle": "Completați formularul → Primiți recomandări → Generați și descărcați raportul",
         "mode_label": "Mod de vizualizare",
         "mode_expert": "Expert (File)",
@@ -478,7 +478,7 @@ T = {
 
     # ── Polish ────────────────────────────────────────────────────────────────
     "pl": {
-        "app_title": "EP Equipment – Panel inspekcji obiektu",
+        "app_title": "Narzędzie inspekcji obiektu AGV",
         "app_subtitle": "Wypełnij formularz → Otrzymaj rekomendacje → Wygeneruj i pobierz raport",
         "mode_label": "Tryb widoku",
         "mode_expert": "Ekspert (Zakładki)",

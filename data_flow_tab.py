@@ -18,7 +18,7 @@ TRIGGER_OPTIONS = [
     "Customer ERP order",
     "Customer MES signal",
     "Conveyor / PLC signal",
-    "EP DAS (scheduled / rule-based)",
+    "WMS / DAS (scheduled / rule-based)",
     "Barcode / RFID scan",
     "Manual / HMI",
     "Scheduled task",
@@ -64,8 +64,8 @@ def _sort_systems(systems, order_values):
 def _build_nodes(ordered_systems, das_enabled):
     nodes = list(ordered_systems)
     if das_enabled:
-        nodes.append("EP DAS / WMS")
-    nodes.append("EP USP Fleet Manager")
+        nodes.append("WMS / DAS Layer")
+    nodes.append("Fleet Manager")
     nodes.append("AGV Fleet")
     return nodes
 
@@ -75,7 +75,7 @@ def _sequence_widget(systems, key_prefix):
     if len(systems) <= 1:
         return list(systems)
 
-    st.caption("Set the position / sequence — EP USP Fleet Manager and AGV Fleet are always fixed at the end.")
+    st.caption("Set the position / sequence — Fleet Manager and AGV Fleet are always fixed at the end.")
     cols = st.columns(len(systems))
     order_values = []
     for i, sys_name in enumerate(systems):
@@ -107,24 +107,24 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
         key="integration_required",
     )
 
-    # ── No integration: EP DAS is always present ─────────────────────────────
+    # ── No integration: WMS/DAS layer is always present ──────────────────────
     if integration_required == "No":
         st.markdown("**Data flow:**")
         st.markdown(
-            _flow_html(["EP DAS / WMS", "EP USP Fleet Manager", "AGV Fleet"]),
+            _flow_html(["WMS / DAS Layer", "Fleet Manager", "AGV Fleet"]),
             unsafe_allow_html=True,
         )
-        st.info("No external system integration. EP DAS coordinates tasks via EP USP Fleet Manager to the AGV fleet.")
+        st.info("No external system integration. WMS / DAS Layer coordinates tasks via Fleet Manager to the AGV fleet.")
         return {
             "integration_required": "No",
             "ep_wms_used": "Yes",
             "connected_external_systems": [],
             "task_trigger": "",
             "data_flow_additional_notes": "",
-            "system_architecture_text": "No external integration required. EP DAS coordinates tasks via EP USP Fleet Manager to the AGV fleet.",
-            "integration_route_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
-            "task_flow_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
-            "connected_systems_text": "EP DAS / WMS, EP USP Fleet Manager, AGV Fleet",
+            "system_architecture_text": "No external integration required. WMS / DAS Layer coordinates tasks via Fleet Manager to the AGV fleet.",
+            "integration_route_text": "WMS / DAS Layer → Fleet Manager → AGV Fleet",
+            "task_flow_text": "WMS / DAS Layer → Fleet Manager → AGV Fleet",
+            "connected_systems_text": "WMS / DAS Layer, Fleet Manager, AGV Fleet",
             "status_feedback_text": "",
             "key_data_exchange_text": "",
             "connections_details": "",
@@ -135,10 +135,10 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
             "other_wms_name": "",
             "integration_connections": [],
             "api_protocols": [],
-            "integration_req": "Integration required: No\nEP DAS layer: Yes",
-            "data_flow_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
+            "integration_req": "Integration required: No\nWMS/DAS layer: Yes",
+            "data_flow_text": "WMS / DAS Layer → Fleet Manager → AGV Fleet",
             "connections": [],
-            "data_flow_diagram_text": "EP DAS / WMS → EP USP Fleet Manager → AGV Fleet",
+            "data_flow_diagram_text": "WMS / DAS Layer → Fleet Manager → AGV Fleet",
             "route_flow_summaries": [],
         }
 
@@ -146,7 +146,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     st.markdown("### Which external systems are involved?")
 
     selected_systems = st.multiselect(
-        "Select all systems that connect to EP equipment",
+        "Select all systems that connect to the AGV system",
         EXTERNAL_SYSTEM_OPTIONS,
         key="connected_external_systems",
         placeholder="Pick one or more systems…",
@@ -194,7 +194,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
                 col1, col2 = st.columns(2)
                 with col1:
                     das = st.radio(
-                        "EP DAS / WMS layer for this step?",
+                        "WMS / DAS layer for this step?",
                         ["Yes", "No"],
                         horizontal=True,
                         key=f"das_route_{idx}",
@@ -235,7 +235,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
         col1, col2 = st.columns(2)
         with col1:
             ep_wms_used = st.radio(
-                "Does EP DAS / WMS sit between external system(s) and EP USP Fleet Manager?",
+                "Does WMS / DAS sit between external system(s) and the Fleet Manager?",
                 ["Yes", "No"],
                 horizontal=True,
                 key="ep_wms_used",
@@ -266,18 +266,18 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     # ── Build Word report texts ───────────────────────────────────────────────
     if rep_systems and rep_das == "Yes":
         arch_text = (
-            f"External system(s) ({', '.join(rep_systems)}) connect to EP DAS / WMS, "
-            "which coordinates tasks via EP USP Fleet Manager to the AGV fleet."
+            f"External system(s) ({', '.join(rep_systems)}) connect to the WMS / DAS Layer, "
+            "which coordinates tasks via Fleet Manager to the AGV fleet."
         )
     elif rep_systems:
         arch_text = (
             f"External system(s) ({', '.join(rep_systems)}) connect directly to "
-            "EP USP Fleet Manager for AGV task dispatch."
+            "Fleet Manager for AGV task dispatch."
         )
     elif ep_wms_used == "Yes":
-        arch_text = "EP DAS / WMS coordinates tasks via EP USP Fleet Manager to the AGV fleet."
+        arch_text = "WMS / DAS Layer coordinates tasks via Fleet Manager to the AGV fleet."
     else:
-        arch_text = "EP USP Fleet Manager dispatches tasks directly to the AGV fleet."
+        arch_text = "Fleet Manager dispatches tasks directly to the AGV fleet."
 
     task_flow_lines = [f"Data flow:\n{integration_route_text}"]
     if additional_notes.strip():
@@ -287,7 +287,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
     for r in route_flow_summaries:
         all_nodes.update(r.get("flow_nodes", []))
     if not all_nodes:
-        all_nodes = {"EP DAS / WMS", "EP USP Fleet Manager", "AGV Fleet"} if ep_wms_used == "Yes" else {"EP USP Fleet Manager", "AGV Fleet"}
+        all_nodes = {"WMS / DAS Layer", "Fleet Manager", "AGV Fleet"} if ep_wms_used == "Yes" else {"Fleet Manager", "AGV Fleet"}
 
     return {
         "integration_required": integration_required,
@@ -312,7 +312,7 @@ def build_data_flow_inputs(route_details=None, selected_apps=None):
         "integration_req": (
             f"Integration required: Yes\n"
             f"Connected systems: {', '.join(display_systems) if display_systems else 'None'}\n"
-            f"EP DAS layer: {ep_wms_used}"
+            f"WMS/DAS layer: {ep_wms_used}"
         ),
         "data_flow_text": integration_route_text,
         "connections": display_systems,

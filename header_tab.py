@@ -639,12 +639,12 @@ def build_header_inputs():
 
         if site_wifi_available == "Yes":
             st.info(
-                "Please refer to the EP System Requirements document to verify AGV network, latency, and WiFi coverage requirements."
+                "Please refer to the AGV System Requirements document to verify network, latency, and WiFi coverage requirements."
             )
             if os.path.exists(SYSTEM_REQUIREMENTS_PDF):
                 with open(SYSTEM_REQUIREMENTS_PDF, "rb") as f:
                     st.download_button(
-                        label="📄 Download EP System Requirements",
+                        label="📄 Download AGV System Requirements",
                         data=f.read(),
                         file_name=SYSTEM_REQUIREMENTS_PDF,
                         mime="application/pdf",
@@ -658,11 +658,11 @@ def build_header_inputs():
             )
         else:
             st.warning("WiFi is not available on site. AGVs require a stable WiFi network to operate.")
-            st.info("Share the EP System Requirements document with the customer's IT team.")
+            st.info("Share the AGV System Requirements document with the customer's IT team.")
             if os.path.exists(SYSTEM_REQUIREMENTS_PDF):
                 with open(SYSTEM_REQUIREMENTS_PDF, "rb") as f:
                     st.download_button(
-                        label="📄 Download EP System Requirements",
+                        label="📄 Download AGV System Requirements",
                         data=f.read(),
                         file_name=SYSTEM_REQUIREMENTS_PDF,
                         mime="application/pdf",
