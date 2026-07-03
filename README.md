@@ -24,11 +24,11 @@ Built to help sales engineers collect customer requirements on-site, validate pr
 ## Products covered
 
 | Product | Application | Max Weight | Max Height | Min Aisle |
-|---|---|---|---|---|
-| XPL201 | Transport / Cross Docking | 2000 kg | Floor level | 1.5 m |
-| XQE122 | Stacking / Conveyor | 1500 kg | 5.5 m | 2900 mm |
-| XNA121 | Narrow Aisle | 1200 kg | 8.5 m | 1.78 m |
-| XNA151 | Narrow Aisle | 1500 kg | 13.0 m | 1.78 m |
+|---|---|---|---|
+| Transport / Cross Docking | 2000 kg | Floor level | 1.5 m |
+| Stacking / Conveyor | 1500 kg | 5.5 m | 2900 mm |
+| Narrow Aisle | 1200 kg | 8.5 m | 1.78 m |
+| Narrow Aisle | 1500 kg | 13.0 m | 1.78 m |
 
 ---
 
