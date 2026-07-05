@@ -94,14 +94,14 @@ def zip_download_popup():
     st.success("✅ Your ZIP report has been downloaded successfully.")
     st.markdown(
         """
-        <div style="background:linear-gradient(135deg,#059669,#047857);border-radius:12px;
+        <div style="background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:12px;
                     padding:18px 22px;margin:12px 0;text-align:center;
-                    box-shadow:0 4px 20px #05966933;">
+                    box-shadow:0 4px 20px #6366f133;">
           <div style="font-size:22px;margin-bottom:6px;">📦</div>
           <div style="color:white;font-weight:700;font-size:16px;margin-bottom:4px;">
             Share this report with your automation team
           </div>
-          <div style="color:#d1fae5;font-size:13px;">
+          <div style="color:#e0e7ff;font-size:13px;">
             Please share the downloaded ZIP with your AGV / automation partner so they<br>
             can review the site requirements and prepare the solution proposal.
           </div>
@@ -345,7 +345,7 @@ st.markdown(
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
-        color: #10b981 !important;
+        color: #818cf8 !important;
     }
     [data-testid="stSidebar"] hr { border-color: #334155 !important; }
     [data-testid="stSidebarNav"] { display: none; }
@@ -355,8 +355,8 @@ st.markdown(
 
     /* ── Tabs: thicker active indicator ─────────────────── */
     [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-        border-bottom: 3px solid #10b981 !important;
-        color: #10b981 !important;
+        border-bottom: 3px solid #6366f1 !important;
+        color: #6366f1 !important;
         font-weight: 700;
     }
     [data-testid="stTabs"] [role="tab"] {
@@ -371,17 +371,17 @@ st.markdown(
         letter-spacing: 0.2px;
         transition: box-shadow 0.2s;
     }
-    .stButton > button:hover { box-shadow: 0 4px 14px #10b98133; }
+    .stButton > button:hover { box-shadow: 0 4px 14px #6366f133; }
 
     /* ── Metric tiles ────────────────────────────────────── */
     [data-testid="stMetric"] {
-        background: #ecfdf5;
-        border-left: 4px solid #10b981;
+        background: #f5f3ff;
+        border-left: 4px solid #6366f1;
         border-radius: 10px;
         padding: 12px 16px;
     }
     [data-testid="stMetricLabel"] { font-size: 12px; color: #64748b !important; }
-    [data-testid="stMetricValue"] { color: #0f172a !important; }
+    [data-testid="stMetricValue"] { color: #1e293b !important; }
 
     /* ── Info / success / warning boxes ─────────────────── */
     [data-testid="stAlert"] { border-radius: 10px !important; }
@@ -389,33 +389,34 @@ st.markdown(
     /* ── Expander headers ────────────────────────────────── */
     details summary {
         font-weight: 600;
-        color: #0f172a;
+        color: #1e293b;
     }
-    details[open] summary { color: #059669; }
+    details[open] summary { color: #6366f1; }
 
-    /* ── Input fields ────────────────────────────────────── */
+    /* ── Input fields: keep clean white ─────────────────── */
     [data-testid="stTextInput"] input,
     [data-testid="stNumberInput"] input,
     [data-testid="stTextArea"] textarea {
         border-radius: 8px !important;
         border-color: #d1d5db !important;
+        background: #ffffff !important;
     }
     [data-testid="stTextInput"] input:focus,
     [data-testid="stNumberInput"] input:focus,
     [data-testid="stTextArea"] textarea:focus {
-        border-color: #10b981 !important;
-        box-shadow: 0 0 0 3px #10b98122 !important;
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px #6366f122 !important;
     }
 
     /* ── Select / multiselect ────────────────────────────── */
     [data-testid="stMultiSelect"] [data-baseweb="tag"] {
-        background: #d1fae5 !important;
-        color: #065f46 !important;
+        background: #ede9fe !important;
+        color: #4338ca !important;
     }
 
     /* ── Progress bar ────────────────────────────────────── */
     [data-testid="stProgressBar"] > div > div {
-        background: linear-gradient(90deg, #10b981, #059669) !important;
+        background: linear-gradient(90deg, #6366f1, #4f46e5) !important;
     }
 
     /* ── Download button ─────────────────────────────────── */
@@ -456,6 +457,29 @@ _INTERNAL_KEYS = {
 }
 
 with st.sidebar:
+    # ── Sidebar brand header ───────────────────────────────
+    st.markdown(
+        """
+        <div style="text-align:center;padding:20px 0 16px;">
+          <div style="font-size:32px;margin-bottom:4px;">🏭</div>
+          <div style="font-size:15px;font-weight:800;color:#a5b4fc;letter-spacing:-0.3px;">
+            AGV Survey Tool
+          </div>
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;">
+            Site Assessment
+          </div>
+        </div>
+        <hr style="border-color:#1e293b;margin:0 0 16px;">
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ── Settings section ────────────────────────────────────
+    st.markdown(
+        "<div style='font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;"
+        "letter-spacing:1.5px;margin-bottom:8px;'>⚙️ Settings</div>",
+        unsafe_allow_html=True,
+    )
     lang_name = st.selectbox(
         t("language_label"),
         list(LANGUAGES.keys()),
@@ -472,7 +496,14 @@ with st.sidebar:
     )
     st.session_state["app_mode"] = "guided" if mode_choice == t("mode_guided") else "expert"
 
-    st.divider()
+    st.markdown("<hr style='border-color:#1e293b;margin:16px 0;'>", unsafe_allow_html=True)
+
+    # ── Session management ──────────────────────────────────
+    st.markdown(
+        "<div style='font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;"
+        "letter-spacing:1.5px;margin-bottom:8px;'>💾 Session</div>",
+        unsafe_allow_html=True,
+    )
 
     _save_data = {}
     for _k, _v in st.session_state.items():
@@ -484,12 +515,12 @@ with st.sidebar:
 
     _session_name_raw = st.text_input(
         "Session file name",
-        value=st.session_state.get("_session_file_name", "ep_session"),
-        placeholder="e.g. Ritick or CustomerABC",
+        value=st.session_state.get("_session_file_name", "agv_session"),
+        placeholder="e.g. CustomerABC",
         key="_session_name_input",
     )
     st.session_state["_session_file_name"] = _session_name_raw
-    _session_filename = re.sub(r"[^\w\-]", "_", _session_name_raw.strip()) or "ep_session"
+    _session_filename = re.sub(r"[^\w\-]", "_", _session_name_raw.strip()) or "agv_session"
 
     st.download_button(
         t("save_session_btn"),
@@ -520,26 +551,83 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Failed to load session file: {e}")
 
-    st.divider()
+    st.markdown("<hr style='border-color:#1e293b;margin:16px 0;'>", unsafe_allow_html=True)
 
-    st.markdown(f"**{t('sidebar_summary_title')}**")
+    # ── Live summary cards ──────────────────────────────────
+    st.markdown(
+        "<div style='font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;"
+        "letter-spacing:1.5px;margin-bottom:10px;'>📋 Survey Summary</div>",
+        unsafe_allow_html=True,
+    )
     _e = t("sum_empty")
-    st.markdown(f"👤 **{t('sum_customer')}:** {st.session_state.get('customer_name') or _e}")
-    st.markdown(f"📦 **{t('sum_application')}:** {', '.join(st.session_state.get('application') or []) or _e}")
-    _ptype = st.session_state.get('pallet_type_1') or st.session_state.get('pallet_type') or _e
-    st.markdown(f"🪵 **{t('sum_pallet')}:** {_ptype}")
-    _wkg = st.session_state.get('load_weight_kg')
-    st.markdown(f"⚖️ **{t('sum_weight')}:** {f'{_wkg} kg' if _wkg else _e}")
-    _aisle = st.session_state.get('cross_docking_aisle') or st.session_state.get('aisle_width_m') or _e
-    st.markdown(f"↔️ **{t('sum_aisle')}:** {f'{_aisle} m' if _aisle != _e else _e}")
-    _flow = st.session_state.get('num_flow_steps')
-    st.markdown(f"🔄 **{t('sum_flow')}:** {f'{_flow} steps' if _flow else _e}")
-    _integ = st.session_state.get('integration_required') or _e
-    st.markdown(f"🔗 **{t('sum_integration')}:** {_integ}")
+    _customer = st.session_state.get("customer_name") or _e
+    _apps = ", ".join(st.session_state.get("application") or []) or _e
+    _ptype = st.session_state.get("pallet_type_1") or st.session_state.get("pallet_type") or _e
+    _wkg = st.session_state.get("load_weight_kg")
+    _wkg_str = f"{_wkg} kg" if _wkg else _e
+    _aisle = st.session_state.get("cross_docking_aisle") or st.session_state.get("aisle_width_m") or _e
+    _aisle_str = f"{_aisle} m" if _aisle != _e else _e
+    _flow = st.session_state.get("num_flow_steps")
+    _flow_str = f"{_flow} steps" if _flow else _e
+    _integ = st.session_state.get("integration_required") or _e
 
-st.title(t("app_title"))
+    def _sum_row(icon, label, value):
+        filled = value != _e
+        val_color = "#e2e8f0" if filled else "#475569"
+        return (
+            f"<div style='display:flex;align-items:center;gap:8px;padding:6px 0;"
+            f"border-bottom:1px solid #1e293b;'>"
+            f"<span style='font-size:14px;'>{icon}</span>"
+            f"<div>"
+            f"<div style='font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1px;'>{label}</div>"
+            f"<div style='font-size:12px;color:{val_color};font-weight:600;'>{value}</div>"
+            f"</div></div>"
+        )
 
-st.markdown(t("app_subtitle"))
+    st.markdown(
+        _sum_row("👤", t("sum_customer"), _customer)
+        + _sum_row("📦", t("sum_application"), _apps)
+        + _sum_row("🪵", t("sum_pallet"), _ptype)
+        + _sum_row("⚖️", t("sum_weight"), _wkg_str)
+        + _sum_row("↔️", t("sum_aisle"), _aisle_str)
+        + _sum_row("🔄", t("sum_flow"), _flow_str)
+        + _sum_row("🔗", t("sum_integration"), _integ),
+        unsafe_allow_html=True,
+    )
+
+st.markdown(
+    f"""
+    <div style="background:linear-gradient(135deg,#1e293b 0%,#312e81 100%);
+                border-radius:16px;padding:28px 32px;margin-bottom:24px;
+                border:1px solid #4338ca33;">
+      <div style="font-size:26px;font-weight:800;color:#ffffff;margin-bottom:6px;letter-spacing:-0.5px;">
+        🏭 {t("app_title")}
+      </div>
+      <div style="color:#a5b4fc;font-size:14px;margin-bottom:18px;">
+        {t("app_subtitle")}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        <div style="background:#ffffff18;border:1px solid #ffffff22;border-radius:8px;
+                    padding:7px 14px;color:#e0e7ff;font-size:12px;font-weight:600;">
+          📝 4-Tab Survey Form
+        </div>
+        <div style="background:#ffffff18;border:1px solid #ffffff22;border-radius:8px;
+                    padding:7px 14px;color:#e0e7ff;font-size:12px;font-weight:600;">
+          ✅ Live Product Validation
+        </div>
+        <div style="background:#ffffff18;border:1px solid #ffffff22;border-radius:8px;
+                    padding:7px 14px;color:#e0e7ff;font-size:12px;font-weight:600;">
+          📄 Auto-Generated Report
+        </div>
+        <div style="background:#ffffff18;border:1px solid #ffffff22;border-radius:8px;
+                    padding:7px 14px;color:#e0e7ff;font-size:12px;font-weight:600;">
+          🌐 8 Languages
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 from header_tab import build_header_inputs
 from secondary_tab import build_material_flow_inputs
@@ -610,8 +698,20 @@ distances = [
 ]
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
 
-st.header("📚 Resources & Reference Documents")
-st.caption("Download technical specifications, layout guides, and reference documents for your AGV system.")
+st.markdown(
+    """
+    <div style="display:flex;align-items:center;gap:12px;margin:32px 0 4px;">
+      <div style="width:4px;height:32px;background:linear-gradient(180deg,#6366f1,#4f46e5);border-radius:4px;"></div>
+      <div>
+        <div style="font-size:22px;font-weight:800;color:#1e293b;">📚 Resources & Reference Documents</div>
+        <div style="font-size:13px;color:#64748b;margin-top:2px;">
+          Download technical specifications, layout guides, and reference documents for your AGV system.
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 _dl_idx = 0
 for _section, _items in RESOURCES.items():
@@ -632,12 +732,11 @@ for _section, _items in RESOURCES.items():
         with _res_cols[_col_pos % 3]:
             st.markdown(
                 f"""
-                <div style="border:1px solid #d1fae5;border-radius:12px;padding:16px 14px 10px 14px;
-                            background:#f0fdf4;min-height:140px;margin-bottom:8px;
-                            transition:box-shadow 0.2s;">
+                <div style="border:1px solid #e0e7ff;border-radius:12px;padding:16px 14px 10px 14px;
+                            background:#f8fafc;min-height:140px;margin-bottom:8px;">
                   <div style="font-size:28px;margin-bottom:6px;">{_icon}</div>
-                  <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#065f46;">{_label}</div>
-                  <div style="font-size:12px;color:#374151;margin-bottom:10px;">{_desc}</div>
+                  <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#3730a3;">{_label}</div>
+                  <div style="font-size:12px;color:#475569;margin-bottom:10px;">{_desc}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -658,7 +757,15 @@ for _section, _items in RESOURCES.items():
                 st.caption("📋 Coming soon")
             _dl_idx += 1
 
-st.markdown("### Generate Report")
+st.markdown(
+    """
+    <div style="display:flex;align-items:center;gap:12px;margin:32px 0 12px;">
+      <div style="width:4px;height:32px;background:linear-gradient(180deg,#6366f1,#4f46e5);border-radius:4px;"></div>
+      <div style="font-size:22px;font-weight:800;color:#1e293b;">📄 Generate Report</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 st.info(
     "By generating the report, you agree that if any changes are required in the layout, "
     "the final solution must follow the standard requirement."
