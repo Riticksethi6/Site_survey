@@ -328,7 +328,7 @@ def _build_operational_metrics(route_details):
 
 
 st.set_page_config(
-    page_title="Smart AGV Site Survey Tool",
+    page_title="Smart AGV / AMR Site Survey Tool",
     page_icon="🏭",
     layout="wide",
 )
@@ -463,10 +463,10 @@ with st.sidebar:
         <div style="text-align:center;padding:20px 0 16px;">
           <div style="font-size:32px;margin-bottom:4px;">🏭</div>
           <div style="font-size:15px;font-weight:800;color:#a5b4fc;letter-spacing:-0.3px;">
-            AGV Survey Tool
+            AGV / AMR / Robot
           </div>
           <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;">
-            Site Assessment
+            Site Survey Tool
           </div>
         </div>
         <hr style="border-color:#1e293b;margin:0 0 16px;">
@@ -609,7 +609,7 @@ st.markdown(
       <div style="display:flex;flex-wrap:wrap;gap:10px;">
         <div style="background:#ffffff18;border:1px solid #ffffff22;border-radius:8px;
                     padding:7px 14px;color:#e0e7ff;font-size:12px;font-weight:600;">
-          📝 4-Tab Survey Form
+          📝 AGV / AMR / Robot Survey
         </div>
         <div style="background:#ffffff18;border:1px solid #ffffff22;border-radius:8px;
                     padding:7px 14px;color:#e0e7ff;font-size:12px;font-weight:600;">
