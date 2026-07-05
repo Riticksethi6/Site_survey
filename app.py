@@ -94,13 +94,14 @@ def zip_download_popup():
     st.success("✅ Your ZIP report has been downloaded successfully.")
     st.markdown(
         """
-        <div style="background:linear-gradient(135deg,#1a73e8,#0b5394);border-radius:12px;
-                    padding:18px 22px;margin:12px 0;text-align:center;">
-          <div style="font-size:22px;margin-bottom:6px;">📩</div>
+        <div style="background:linear-gradient(135deg,#059669,#047857);border-radius:12px;
+                    padding:18px 22px;margin:12px 0;text-align:center;
+                    box-shadow:0 4px 20px #05966933;">
+          <div style="font-size:22px;margin-bottom:6px;">📦</div>
           <div style="color:white;font-weight:700;font-size:16px;margin-bottom:4px;">
             Share this report with your automation team
           </div>
-          <div style="color:#cfe2ff;font-size:13px;">
+          <div style="color:#d1fae5;font-size:13px;">
             Please share the downloaded ZIP with your AGV / automation partner so they<br>
             can review the site requirements and prepare the solution proposal.
           </div>
@@ -326,7 +327,109 @@ def _build_operational_metrics(route_details):
     }
 
 
-st.set_page_config(page_title="Smart AGV Site Survey Tool", layout="wide")
+st.set_page_config(
+    page_title="Smart AGV Site Survey Tool",
+    page_icon="🏭",
+    layout="wide",
+)
+
+st.markdown(
+    """
+    <style>
+    /* ── Sidebar: dark slate ─────────────────────────────── */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+    }
+    [data-testid="stSidebar"] * { color: #cbd5e1 !important; }
+    [data-testid="stSidebar"] strong { color: #f1f5f9 !important; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
+        color: #10b981 !important;
+    }
+    [data-testid="stSidebar"] hr { border-color: #334155 !important; }
+    [data-testid="stSidebarNav"] { display: none; }
+
+    /* ── App title area ──────────────────────────────────── */
+    h1 { letter-spacing: -0.5px; }
+
+    /* ── Tabs: thicker active indicator ─────────────────── */
+    [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+        border-bottom: 3px solid #10b981 !important;
+        color: #10b981 !important;
+        font-weight: 700;
+    }
+    [data-testid="stTabs"] [role="tab"] {
+        font-weight: 500;
+    }
+
+    /* ── Primary buttons ─────────────────────────────────── */
+    .stButton > button[kind="primary"],
+    .stButton > button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.2px;
+        transition: box-shadow 0.2s;
+    }
+    .stButton > button:hover { box-shadow: 0 4px 14px #10b98133; }
+
+    /* ── Metric tiles ────────────────────────────────────── */
+    [data-testid="stMetric"] {
+        background: #ecfdf5;
+        border-left: 4px solid #10b981;
+        border-radius: 10px;
+        padding: 12px 16px;
+    }
+    [data-testid="stMetricLabel"] { font-size: 12px; color: #64748b !important; }
+    [data-testid="stMetricValue"] { color: #0f172a !important; }
+
+    /* ── Info / success / warning boxes ─────────────────── */
+    [data-testid="stAlert"] { border-radius: 10px !important; }
+
+    /* ── Expander headers ────────────────────────────────── */
+    details summary {
+        font-weight: 600;
+        color: #0f172a;
+    }
+    details[open] summary { color: #059669; }
+
+    /* ── Input fields ────────────────────────────────────── */
+    [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input,
+    [data-testid="stTextArea"] textarea {
+        border-radius: 8px !important;
+        border-color: #d1d5db !important;
+    }
+    [data-testid="stTextInput"] input:focus,
+    [data-testid="stNumberInput"] input:focus,
+    [data-testid="stTextArea"] textarea:focus {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 3px #10b98122 !important;
+    }
+
+    /* ── Select / multiselect ────────────────────────────── */
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] {
+        background: #d1fae5 !important;
+        color: #065f46 !important;
+    }
+
+    /* ── Progress bar ────────────────────────────────────── */
+    [data-testid="stProgressBar"] > div > div {
+        background: linear-gradient(90deg, #10b981, #059669) !important;
+    }
+
+    /* ── Download button ─────────────────────────────────── */
+    [data-testid="stDownloadButton"] button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+
+    /* ── Divider ─────────────────────────────────────────── */
+    hr { border-color: #e2e8f0 !important; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 for key, default in {
     "report_ready": False,
@@ -508,7 +611,7 @@ distances = [
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
 
 st.header("📚 Resources & Reference Documents")
-st.caption("Download technical specifications, layout guides, and customer documents for EP equipment.")
+st.caption("Download technical specifications, layout guides, and reference documents for your AGV system.")
 
 _dl_idx = 0
 for _section, _items in RESOURCES.items():
@@ -529,11 +632,12 @@ for _section, _items in RESOURCES.items():
         with _res_cols[_col_pos % 3]:
             st.markdown(
                 f"""
-                <div style="border:1px solid #e0e0e0;border-radius:12px;padding:16px 14px 10px 14px;
-                            background:#fafafa;min-height:140px;margin-bottom:8px;">
+                <div style="border:1px solid #d1fae5;border-radius:12px;padding:16px 14px 10px 14px;
+                            background:#f0fdf4;min-height:140px;margin-bottom:8px;
+                            transition:box-shadow 0.2s;">
                   <div style="font-size:28px;margin-bottom:6px;">{_icon}</div>
-                  <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1a1a2e;">{_label}</div>
-                  <div style="font-size:12px;color:#555;margin-bottom:10px;">{_desc}</div>
+                  <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#065f46;">{_label}</div>
+                  <div style="font-size:12px;color:#374151;margin-bottom:10px;">{_desc}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,

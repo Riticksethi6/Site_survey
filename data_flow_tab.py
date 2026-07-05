@@ -29,25 +29,28 @@ TRIGGER_OPTIONS = [
 def _flow_html(nodes):
     parts = []
     for i, node in enumerate(nodes):
-        is_usp = "USP" in str(node)
-        is_das = "DAS" in str(node)
-        if is_usp:
-            border, bg = "#1a73e8", "#e8f0fe"
+        is_fleet = "Fleet Manager" in str(node)
+        is_das = "DAS" in str(node) or "WMS" in str(node)
+        is_agv = "AGV" in str(node)
+        if is_fleet:
+            border, bg, color = "#10b981", "#ecfdf5", "#065f46"
         elif is_das:
-            border, bg = "#0b8043", "#e6f4ea"
+            border, bg, color = "#0891b2", "#ecfeff", "#164e63"
+        elif is_agv:
+            border, bg, color = "#7c3aed", "#f5f3ff", "#4c1d95"
         else:
-            border, bg = "#444", "white"
+            border, bg, color = "#6b7280", "#f9fafb", "#1f2937"
         parts.append(
             f"<div style='min-width:120px;text-align:center;padding:14px 10px;"
             f"border:2px solid {border};border-radius:10px;background:{bg};"
-            f"font-weight:600;font-size:13px;'>{html.escape(str(node))}</div>"
+            f"font-weight:600;font-size:13px;color:{color};'>{html.escape(str(node))}</div>"
         )
         if i < len(nodes) - 1:
-            parts.append("<div style='font-size:24px;font-weight:700;color:#444;'>→</div>")
+            parts.append("<div style='font-size:22px;font-weight:700;color:#10b981;'>→</div>")
 
     return (
-        "<div style='border:1px solid #d9d9e3;border-radius:14px;padding:18px;"
-        "background:#fafafa;margin:10px 0;'>"
+        "<div style='border:1px solid #d1fae5;border-radius:14px;padding:18px;"
+        "background:#f8fafc;margin:10px 0;'>"
         "<div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap;'>"
         + "".join(parts)
         + "</div></div>"
