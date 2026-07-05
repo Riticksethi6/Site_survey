@@ -1,13 +1,13 @@
-# products.py – Full specs from XPL and XQE Layout Planning PDFs (Euro Pallets)
+# products.py – Generic AMR/AGV/Robot product specs
 
 PRODUCT_SPECS = {
-    "XPL201": {
+    "Horizontal Transport AMR": {
         "description": "For fast transport / cross docking, many point pick up to many point drop, "
                        "floor storage no stacking, up to 2000 kg.",
         "load_capacity_kg": 2000,
         "max_lift_height_m": 0.0,
         "aisle_requirements": {
-            "driving_one_way": 1.8,          # m (conservative from most PDFs)
+            "driving_one_way": 1.8,
             "driving_two_way": 3.6,
             "turning_one_way": 2.3,
             "turning_two_way": 3.8,
@@ -32,7 +32,7 @@ PRODUCT_SPECS = {
         "safety_features": "Advanced safety LiDARs, cameras, sensors; obstacle detection with stop or reroute."
     },
 
-    "XQE122": {
+    "Stacker AMR": {
         "description": "For stacking on floor, picking from conveyor, stacking on racks up to 5.5 m, "
                        "1200 kg up to 4.5 m, 1500 kg up to 3.5 m.",
         "load_capacity": {
@@ -45,8 +45,7 @@ PRODUCT_SPECS = {
             "straight_one_way": 2.5,
             "straight_two_way": 4.1,
             "turning_radius_reference_mm": 500,
-            "note": "More aisle space improves speed, safety detection, throughput, and tuning. "
-                    "See turning radius diagram for 500 mm reference."
+            "note": "More aisle space improves speed, safety detection, throughput, and tuning."
         },
         "rack_pallet_distance_m": 0.1,
         "dense_stacking_clearance_m": 0.2,
@@ -59,7 +58,7 @@ PRODUCT_SPECS = {
         }
     },
 
-    "XNA121": {
+    "VNA Standard": {
         "description": "For narrow aisle 1800 mm dual racks both sides, 1200 kg up to 8.5 m.",
         "load_capacity_kg": 1200,
         "max_lift_height_m": 8.5,
@@ -69,10 +68,10 @@ PRODUCT_SPECS = {
         "weight_kg": 6500
     },
 
-    "XNA151": {
+    "VNA High Reach": {
         "description": "For narrow aisle 1800 mm dual racks both sides, 1500 kg up to 13 m.",
         "load_capacity_kg": 1500,
         "max_lift_height_m": 13.0,
         "min_aisle_width_m": 1.65
     }
-}  # handling added
+}

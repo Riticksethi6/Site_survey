@@ -22,26 +22,26 @@ XPL_PDF_CANDIDATES = [
 RESOURCES = {
     "Layout References": [
         (
-            "XQE122 Layout Requirements",
+            "Stacker AMR Layout Requirements",
             "1.1_Layout_Requirment_XQE_.pdf",
             "application/pdf",
-            "Aisle planning, clearances, floor stacking and rack stacking specifications for the XQE122 stacking AMR.",
+            "Aisle planning, clearances, floor stacking and rack stacking specifications for the Stacker AMR.",
             "📐",
         ),
         (
-            "XNA Layout Requirements (Draft)",
+            "VNA AMR Layout Requirements (Draft)",
             "1.3_Layout_Requirment_XNA.docx",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "Draft layout and aisle planning specification for XNA121 / XNA151 narrow-aisle AMRs.",
+            "Draft layout and aisle planning specification for VNA Standard / VNA High Reach narrow-aisle robots.",
             "📐",
             None,
             True,  # coming_soon
         ),
         (
-            "XPL201 Layout Planning Specification (Draft)",
+            "Horizontal Transport AMR Layout Specification (Draft)",
             None,  # resolved at runtime from candidates
             "application/pdf",
-            "Aisle planning and layout specification for the XPL201 pallet mover AMR.",
+            "Aisle planning and layout specification for horizontal transport / cross-docking robots.",
             "📐",
             "XPL_PDF_CANDIDATES",
             True,  # coming_soon
@@ -49,17 +49,17 @@ RESOURCES = {
     ],
     "White Books": [
         (
-            "XQE122 Technical Reference",
+            "Stacker AMR Technical Reference",
             "XQE122 CE White book Extern.pdf",
             "application/pdf",
-            "Customer-facing technical reference for the XQE122: features, specs, operation, and safety.",
+            "Technical reference for the Stacker AMR: features, specs, operation, and safety.",
             "📖",
         ),
         (
-            "XPL201 Technical Reference",
+            "Horizontal Transport AMR Technical Reference",
             "XPL201 CE White book Extern.pdf",
             "application/pdf",
-            "Customer-facing technical reference for the XPL201: features, specs, operation, and safety.",
+            "Technical reference for the Horizontal Transport AMR: features, specs, operation, and safety.",
             "📖",
         ),
     ],
@@ -75,7 +75,7 @@ RESOURCES = {
             "AGV Pallet Compatibility Reference",
             "2_AGV - Pallet Compatibility Reference.pdf",
             "application/pdf",
-            "Pallet and load compatibility requirements for XQE / XPL / XNA AGV models — covers transport, stacking, custom sizes, and load condition checks.",
+            "Pallet and load compatibility requirements for Stacker / Horizontal Transport / VNA robot types — covers transport, stacking, custom sizes, and load condition checks.",
             "🪵",
         ),
     ],
@@ -553,6 +553,15 @@ with st.sidebar:
 
     st.markdown("<hr style='border-color:#1e293b;margin:16px 0;'>", unsafe_allow_html=True)
 
+    # ── Clear form ──────────────────────────────────────────
+    if st.button("🗑️ Clear All & Start Fresh", use_container_width=True):
+        _keep = {"lang", "app_mode", "guided_step"}
+        for _k in [k for k in st.session_state if k not in _keep and not k.startswith("_")]:
+            del st.session_state[_k]
+        st.rerun()
+
+    st.markdown("<hr style='border-color:#1e293b;margin:16px 0;'>", unsafe_allow_html=True)
+
     # ── Live summary cards ──────────────────────────────────
     st.markdown(
         "<div style='font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;"
@@ -698,6 +707,42 @@ distances = [
 ]
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
 
+# ── Live Fleet Estimator ──────────────────────────────────────────────────────
+st.markdown(
+    """
+    <div style="display:flex;align-items:center;gap:12px;margin:32px 0 12px;">
+      <div style="width:4px;height:32px;background:linear-gradient(180deg,#6366f1,#4f46e5);border-radius:4px;"></div>
+      <div style="font-size:22px;font-weight:800;color:#1e293b;">🚗 Live Fleet Size Estimator</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+with st.expander("Estimate how many robots you need — updates instantly", expanded=False):
+    _fe_cols = st.columns(3)
+    with _fe_cols[0]:
+        _fe_pallets = st.number_input("Required throughput [pallets/hr]", min_value=0, value=0, step=1, key="_fe_pallets")
+    with _fe_cols[1]:
+        _fe_dist = st.number_input("Avg. mission distance [m]", min_value=0.0, value=float(all_data.get("avg_transport_m") or 0), step=1.0, key="_fe_dist")
+    with _fe_cols[2]:
+        _fe_type = st.selectbox("Robot type", ["Horizontal Transport AMR", "Stacker AMR", "VNA (Standard / High Reach)"], key="_fe_type")
+
+    if _fe_pallets > 0 and _fe_dist > 0:
+        _fe_speed = 1.75 if "Horizontal" in _fe_type else 1.0
+        _fe_dead = 30 if "Horizontal" in _fe_type else (45 if "Stacker" in _fe_type else 60)
+        _fe_cycle = (_fe_dist * 2 / _fe_speed) + _fe_dead
+        _fe_size = max(1, round((_fe_pallets * _fe_cycle / 3600) * 1.2))
+        _fe_util = min(99, round((_fe_pallets * _fe_cycle / 3600) / _fe_size * 100))
+
+        _fe_c1, _fe_c2, _fe_c3 = st.columns(3)
+        _fe_c1.metric("Recommended fleet size", f"~{_fe_size} robots")
+        _fe_c2.metric("Est. fleet utilisation", f"{_fe_util}%")
+        _fe_c3.metric("Cycle time per mission", f"{round(_fe_cycle)}s")
+        st.caption("Formula: fleet = ⌈(pallets/hr × cycle_time / 3600) × 1.2 buffer⌉. Adjust with your real cycle times from site survey.")
+    elif _fe_pallets > 0 or _fe_dist > 0:
+        st.info("Enter both throughput and distance to calculate fleet size.")
+    else:
+        st.caption("Fill in throughput and distance above to get an instant fleet size estimate.")
+
 st.markdown(
     """
     <div style="display:flex;align-items:center;gap:12px;margin:32px 0 4px;">
@@ -840,37 +885,37 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
 
             aisle_lines = []
             if "Transport / Cross Docking" in selected_apps and all_data.get("cross_docking_aisle"):
-                aisle_lines.append(f"XPL available aisle width: {all_data.get('cross_docking_aisle')} m")
+                aisle_lines.append(f"Horizontal Transport aisle width: {all_data.get('cross_docking_aisle')} m")
             if "Stacking/Conveyor" in selected_apps and all_data.get("aisle_width_mm"):
-                aisle_lines.append(f"XQE available aisle width: {all_data.get('aisle_width_mm')} mm")
+                aisle_lines.append(f"Stacker aisle width: {all_data.get('aisle_width_mm')} mm")
             if "Narrow Aisle" in selected_apps and all_data.get("aisle_width_m"):
-                aisle_lines.append(f"XNA available aisle width: {all_data.get('aisle_width_m')} m")
+                aisle_lines.append(f"VNA aisle width: {all_data.get('aisle_width_m')} m")
             context["aisle_width_text"] = "\n".join(aisle_lines)
 
             load_weight_lines = []
             if all_data.get("load_weight_kg"):
                 if "Transport / Cross Docking" in selected_apps:
-                    load_weight_lines.append(f"XPL load weight: {all_data.get('load_weight_kg')} kg")
+                    load_weight_lines.append(f"Horizontal Transport load weight: {all_data.get('load_weight_kg')} kg")
                 if "Stacking/Conveyor" in selected_apps:
-                    load_weight_lines.append(f"XQE load weight: {all_data.get('load_weight_kg')} kg")
+                    load_weight_lines.append(f"Stacker load weight: {all_data.get('load_weight_kg')} kg")
                 if "Narrow Aisle" in selected_apps:
-                    load_weight_lines.append(f"XNA load weight: {all_data.get('load_weight_kg')} kg")
+                    load_weight_lines.append(f"VNA load weight: {all_data.get('load_weight_kg')} kg")
             context["load_weight_text"] = "\n".join(load_weight_lines)
 
             stacking_height_lines = []
             if all_data.get("max_stacking_height_m"):
                 if "Stacking/Conveyor" in selected_apps:
-                    stacking_height_lines.append(f"XQE maximum stacking height: {all_data.get('max_stacking_height_m')} m")
+                    stacking_height_lines.append(f"Stacker maximum stacking height: {all_data.get('max_stacking_height_m')} m")
                 if "Narrow Aisle" in selected_apps:
-                    stacking_height_lines.append(f"XNA maximum stacking height: {all_data.get('max_stacking_height_m')} m")
+                    stacking_height_lines.append(f"VNA maximum stacking height: {all_data.get('max_stacking_height_m')} m")
             context["stacking_height_text"] = "\n".join(stacking_height_lines)
 
             stacking_level_lines = []
             if all_data.get("stacking_level") not in (None, "", 0):
                 if "Stacking/Conveyor" in selected_apps:
-                    stacking_level_lines.append(f"XQE stacking level: {all_data.get('stacking_level')}")
+                    stacking_level_lines.append(f"Stacker stacking level: {all_data.get('stacking_level')}")
                 if "Narrow Aisle" in selected_apps:
-                    stacking_level_lines.append(f"XNA stacking level: {all_data.get('stacking_level')}")
+                    stacking_level_lines.append(f"VNA stacking level: {all_data.get('stacking_level')}")
             context["stacking_level_text"] = "\n".join(stacking_level_lines)
 
             context["clearance_height_text"] = (
@@ -881,20 +926,20 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
 
             storage_location_lines = []
             if "Stacking/Conveyor" in selected_apps and all_data.get("storage_locations"):
-                storage_location_lines.append(f"XQE storage locations: {all_data.get('storage_locations')}")
+                storage_location_lines.append(f"Stacker storage locations: {all_data.get('storage_locations')}")
             elif "Stacking/Conveyor" in selected_apps and all_data.get("storage_layout"):
-                storage_location_lines.append(f"XQE storage layout / locations: {all_data.get('storage_layout')}")
+                storage_location_lines.append(f"Stacker storage layout / locations: {all_data.get('storage_layout')}")
             context["storage_locations_text"] = "\n".join(storage_location_lines)
 
             application_lines = []
 
             if "Transport / Cross Docking" in selected_apps:
-                application_lines.append("XPL - Transport / Cross Docking:")
+                application_lines.append("Horizontal Transport AMR - Transport / Cross Docking:")
                 add_line(application_lines, "Application type", all_data.get("xpl_sub_type"))
 
             if "Stacking/Conveyor" in selected_apps:
                 application_lines.append("")
-                application_lines.append("XQE - Stacking / Conveyor:")
+                application_lines.append("Stacker AMR - Stacking / Conveyor:")
                 add_line(application_lines, "Pickup type", all_data.get("pickup_type"))
                 add_line(application_lines, "Pickup type (other)", all_data.get("pickup_type_other"))
                 add_line(application_lines, "Stacking type", all_data.get("stacking_type"))
@@ -904,7 +949,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
 
             if "Narrow Aisle" in selected_apps:
                 application_lines.append("")
-                application_lines.append("XNA - Narrow Aisle:")
+                application_lines.append("VNA - Very Narrow Aisle:")
                 add_line(application_lines, "Preferred model", all_data.get("xna_model"))
 
             context["application_specific_text"] = "\n".join([line for line in application_lines if line is not None]).strip()
@@ -919,7 +964,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 if all_data.get("load_weight_kg"):
                     xpl_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
                 if xpl_parts:
-                    summary_lines.append("XPL summary: " + " | ".join(xpl_parts))
+                    summary_lines.append("Horizontal Transport summary: " + " | ".join(xpl_parts))
 
             if "Stacking/Conveyor" in selected_apps:
                 xqe_parts = []
@@ -932,7 +977,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 if all_data.get("load_weight_kg"):
                     xqe_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
                 if xqe_parts:
-                    summary_lines.append("XQE summary: " + " | ".join(xqe_parts))
+                    summary_lines.append("Stacker summary: " + " | ".join(xqe_parts))
 
             if "Narrow Aisle" in selected_apps:
                 xna_parts = []
@@ -945,7 +990,7 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 if all_data.get("load_weight_kg"):
                     xna_parts.append(f"Load: {all_data.get('load_weight_kg')} kg")
                 if xna_parts:
-                    summary_lines.append("XNA summary: " + " | ".join(xna_parts))
+                    summary_lines.append("VNA summary: " + " | ".join(xna_parts))
 
             context["xqe_xpl_xna_summary_text"] = "\n".join(summary_lines)
 
@@ -1097,13 +1142,13 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 aisle = all_data.get("cross_docking_aisle", 0)
                 weight = all_data.get("load_weight_kg", 0)
                 is_valid, msg, color = validate_xpl201(aisle, weight, all_data.get("pallet_type", ""))
-                validation_summary.append(f"XPL201 ({all_data.get('xpl_sub_type', 'N/A')}): {msg} ({color})")
+                validation_summary.append(f"Horizontal Transport AMR ({all_data.get('xpl_sub_type', 'N/A')}): {msg} ({color})")
                 if is_valid or color == "orange":
                     speed = 1.75
                     cycle_time = (avg_dist * 2 / speed) + 30 if avg_dist else 30
                     fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
-                    recommendations.append(f"XPL201 - {all_data.get('xpl_sub_type', 'Transport')} - Fast floor-level transport up to 2000 kg")
-                    fleet_estimates.append(f"XPL201: ~{fleet_size} vehicles")
+                    recommendations.append(f"Horizontal Transport AMR - {all_data.get('xpl_sub_type', 'Transport')} - Fast floor-level transport up to 2000 kg")
+                    fleet_estimates.append(f"Horizontal Transport AMR: ~{fleet_size} vehicles")
 
             if "Stacking/Conveyor" in selected_apps and all_data.get("load_weight_kg") and all_data.get("max_stacking_height_m"):
                 is_valid, msg, color = validate_xqe122(
@@ -1111,16 +1156,16 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                     all_data.get("max_stacking_height_m", 0),
                     all_data.get("aisle_width_mm", 0),
                 )
-                validation_summary.append(f"XQE122: {msg} ({color})")
+                validation_summary.append(f"Stacker AMR: {msg} ({color})")
                 if is_valid or color == "orange":
                     speed = 1.0
                     cycle_time = (avg_dist * 2 / speed) + 45 if avg_dist else 45
                     fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
-                    recommendations.append("XQE122 - Stacking / conveyor handling")
-                    fleet_estimates.append(f"XQE122: ~{fleet_size} vehicles")
+                    recommendations.append("Stacker AMR - Stacking / conveyor handling")
+                    fleet_estimates.append(f"Stacker AMR: ~{fleet_size} vehicles")
 
             if "Narrow Aisle" in selected_apps and all_data.get("aisle_width_m") and all_data.get("xna_model"):
-                model = all_data.get("xna_model", "XNA121 (up to 8.5m)")
+                model = all_data.get("xna_model", "VNA Standard (up to 8.5m)")
                 is_valid, msg, color = validate_xna121_151(
                     all_data.get("aisle_width_m", 0),
                     all_data.get("load_weight_kg", 0),
@@ -1139,14 +1184,14 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             context["fleet_recommendation"] = "\n".join(fleet_estimates) if fleet_estimates else ""
             context["validation_summary"] = "\n".join(validation_summary) if validation_summary else ""
 
-            xqe_rec_parts = [r for r in recommendations if "XQE" in r]
-            xqe_rec_parts += [e for e in fleet_estimates if "XQE" in e]
-            xqe_rec_parts += [v.split(": ", 1)[-1].rsplit(" (", 1)[0] for v in validation_summary if "XQE" in v]
+            xqe_rec_parts = [r for r in recommendations if "Stacker" in r]
+            xqe_rec_parts += [e for e in fleet_estimates if "Stacker" in e]
+            xqe_rec_parts += [v.split(": ", 1)[-1].rsplit(" (", 1)[0] for v in validation_summary if "Stacker" in v]
             context["recommendation_text"] = "\n".join(xqe_rec_parts) if xqe_rec_parts else ""
 
-            xpl_rec_parts = [r for r in recommendations if "XPL" in r]
-            xpl_rec_parts += [e for e in fleet_estimates if "XPL" in e]
-            xpl_rec_parts += [v.split(": ", 1)[-1].rsplit(" (", 1)[0] for v in validation_summary if "XPL" in v]
+            xpl_rec_parts = [r for r in recommendations if "Horizontal" in r]
+            xpl_rec_parts += [e for e in fleet_estimates if "Horizontal" in e]
+            xpl_rec_parts += [v.split(": ", 1)[-1].rsplit(" (", 1)[0] for v in validation_summary if "Horizontal" in v]
             context["xpl_recommendation"] = "\n".join(xpl_rec_parts) if xpl_rec_parts else ""
 
             if all_data.get("ep_wms_used") == "Yes":

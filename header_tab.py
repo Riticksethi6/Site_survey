@@ -236,7 +236,7 @@ def build_header_inputs():
 
         if primary_pallet["pallet_type"] == "Euro" and load_weight_kg > 1500:
             st.warning(
-                f"⚠️ XPL201 can carry up to 2000 kg, but a standard Euro pallet is only structurally rated for ~1500 kg under dynamic load. "
+                f"⚠️ Horizontal Transport AMR can carry up to 2000 kg, but a standard Euro pallet is only structurally rated for ~1500 kg under dynamic load. "
                 f"Current: {load_weight_kg} kg on Euro pallet. "
                 "Use an Industrial or custom pallet for loads above 1500 kg, or confirm the actual pallet rating with your supplier."
             )
@@ -257,7 +257,7 @@ def build_header_inputs():
         )
 
     if "Stacking/Conveyor" in application:
-        st.info("Stacking / Conveyor (XQE122): maximum 5.5 m at 900 kg")
+        st.info("Stacking / Conveyor (Stacker AMR): maximum 5.5 m at 900 kg")
 
         pickup_type = st.radio(
             "Pickup Type",
@@ -340,12 +340,12 @@ def build_header_inputs():
                 value=0,
                 step=1,
                 key="floor_box_distance_mm",
-                help="XQE requires minimum 200 mm clearance between pallets/boxes in ALL directions — front, back, left, right.",
+                help="Stacker AMR requires minimum 200 mm clearance between pallets/boxes in ALL directions — front, back, left, right.",
             )
 
             if box_distance_mm and box_distance_mm < 200:
                 st.error(
-                    "❌ Minimum gap between pallets/boxes for XQE floor stacking is 200 mm in ALL directions "
+                    "❌ Minimum gap between pallets/boxes for Stacker AMR floor stacking is 200 mm in ALL directions "
                     "(front, back, left, right). Current: {} mm.".format(box_distance_mm)
                 )
             elif box_distance_mm:
@@ -357,12 +357,12 @@ def build_header_inputs():
                 value=0,
                 step=1,
                 key="floor_aisle_width_mm",
-                help="XQE truck body is 1240 mm wide. Add 200 mm clearance on each side = 1640 mm minimum channel. Overall aisle for XQE operation: minimum 2900 mm.",
+                help="Stacker AMR truck body is 1240 mm wide. Add 200 mm clearance on each side = 1640 mm minimum channel. Overall aisle for Stacker AMR operation: minimum 2900 mm.",
             )
 
             if aisle_width_mm and aisle_width_mm < 1640:
                 st.error(
-                    f"❌ Minimum channel width for XQE floor stacking is 1640 mm "
+                    f"❌ Minimum channel width for Stacker AMR floor stacking is 1640 mm "
                     f"(truck body 1240 mm + 200 mm clearance each side). Current: {aisle_width_mm} mm."
                 )
             elif aisle_width_mm:
@@ -397,7 +397,7 @@ def build_header_inputs():
                 value=0,
                 step=1,
                 key="rack_aisle_width_mm",
-                help="Minimum 2900 mm for XQE rack operation (overall aisle). Minimum 2840 mm pallet-to-pallet face.",
+                help="Minimum 2900 mm for Stacker AMR rack operation (overall aisle). Minimum 2840 mm pallet-to-pallet face.",
             )
 
             if aisle_width_mm and aisle_width_mm < 2840:
@@ -406,7 +406,7 @@ def build_header_inputs():
                 st.success(f"✅ Rack aisle width OK ({aisle_width_mm} mm).")
 
     if "Narrow Aisle" in application:
-        st.info("Narrow Aisle (XNA121 / XNA151): recommended aisle width 1.78–2.0 m")
+        st.info("Very Narrow Aisle (VNA Standard / VNA High Reach): recommended aisle width 1.78–2.0 m")
 
         aisle_width_m = st.number_input(
             "Actual Aisle Width [m]",
@@ -418,14 +418,14 @@ def build_header_inputs():
 
         xna_model = st.selectbox(
             "Preferred Model",
-            ["XNA121 (up to 8.5m)", "XNA151 (up to 13m)"],
+            ["VNA Standard (up to 8.5m)", "VNA High Reach (up to 13m)"],
             key="xna_model"
         )
 
     if "Stacking/Conveyor" in application or "Narrow Aisle" in application:
         _height_max = 5.5 if "Stacking/Conveyor" in application else 0.0
         if "Narrow Aisle" in application:
-            _xna_max = 13.0 if "XNA151" in (xna_model or "") else 8.5
+            _xna_max = 13.0 if "High Reach" in (xna_model or "") else 8.5
             _height_max = max(_height_max, _xna_max)
 
         _cur = min(float(st.session_state.get("max_stacking_height_m") or 0.0), _height_max)
@@ -445,16 +445,16 @@ def build_header_inputs():
         _range_parts = []
         if "Stacking/Conveyor" in application:
             if load_weight_kg > 1200:
-                _range_parts.append("XQE: 0.1 – 3.5 m (load > 1200 kg)")
+                _range_parts.append("Stacker: 0.1 – 3.5 m (load > 1200 kg)")
             elif load_weight_kg > 900:
-                _range_parts.append("XQE: 0.1 – 4.5 m (load > 900 kg)")
+                _range_parts.append("Stacker: 0.1 – 4.5 m (load > 900 kg)")
             else:
-                _range_parts.append("XQE: 0.1 – 5.5 m")
+                _range_parts.append("Stacker: 0.1 – 5.5 m")
         if "Narrow Aisle" in application:
-            if "XNA151" in (xna_model or ""):
-                _range_parts.append("XNA151: 0.1 – 13.0 m")
+            if "High Reach" in (xna_model or ""):
+                _range_parts.append("VNA High Reach: 0.1 – 13.0 m")
             else:
-                _range_parts.append("XNA121: 0.1 – 8.5 m")
+                _range_parts.append("VNA Standard: 0.1 – 8.5 m")
         if _range_parts:
             st.markdown(
                 '<div style="background:#eef6fb;border-left:4px solid #2196F3;padding:5px 10px;'
@@ -467,7 +467,7 @@ def build_header_inputs():
         load_height_m = _parse_load_height_m(primary_pallet["load_dimensions"])
         auto_level = ""
 
-        # XQE machine max lift height
+        # Stacker AMR machine max lift height
         _xqe_max_h = 5.5 if "Stacking/Conveyor" in application else 999.0
 
         if load_height_m > 0:
@@ -477,7 +477,7 @@ def build_header_inputs():
                 auto_level = str(min(machine_max_levels, customer_max_levels))
                 st.info(
                     f"Pallet height: {load_height_m:.2f} m  →  "
-                    f"XQE max height {_xqe_max_h} m allows **{machine_max_levels} levels**. "
+                    f"Stacker AMR max height {_xqe_max_h} m allows **{machine_max_levels} levels**. "
                     f"Your required height {max_stacking_height_m} m = {customer_max_levels} levels. "
                     f"Suggested level: **{auto_level}**."
                 )
@@ -485,7 +485,7 @@ def build_header_inputs():
                 auto_level = str(machine_max_levels)
                 st.info(
                     f"Pallet height: {load_height_m:.2f} m  →  "
-                    f"XQE can stack up to **{machine_max_levels} levels** (max height {_xqe_max_h} m)."
+                    f"Stacker AMR can stack up to **{machine_max_levels} levels** (max height {_xqe_max_h} m)."
                 )
         elif max_stacking_height_m > 0:
             st.caption("Enter pallet dimensions (L×W×H mm) above to auto-calculate max stacking levels.")
@@ -505,21 +505,21 @@ def build_header_inputs():
                 if _total_h > _xqe_max_h:
                     st.error(
                         f"❌ {_lvl} levels × {load_height_m:.2f} m = {_total_h:.2f} m — "
-                        f"exceeds XQE max lift height of {_xqe_max_h} m. "
+                        f"exceeds Stacker AMR max lift height of {_xqe_max_h} m. "
                         f"Maximum {math.floor(_xqe_max_h / load_height_m)} levels for this pallet height."
                     )
                 else:
                     st.success(
-                        f"✅ {_lvl} levels × {load_height_m:.2f} m = {_total_h:.2f} m — within XQE max height of {_xqe_max_h} m."
+                        f"✅ {_lvl} levels × {load_height_m:.2f} m = {_total_h:.2f} m — within Stacker AMR max height of {_xqe_max_h} m."
                     )
             except ValueError:
                 pass
 
         if "Stacking/Conveyor" in application:
             if load_weight_kg <= 900 and max_stacking_height_m > 5.5:
-                st.error("XQE maximum stacking height is 5.5 m.")
+                st.error("Stacker AMR maximum stacking height is 5.5 m.")
             elif load_weight_kg > 900 and max_stacking_height_m > 5.5:
-                st.error("At 900 kg XQE can go up to 5.5 m. Above that load, please verify with engineering.")
+                st.error("At 900 kg Stacker AMR can go up to 5.5 m. Above that load, please verify with engineering.")
             elif load_weight_kg > 900 and max_stacking_height_m > 4.5:
                 st.warning("Above 900 kg, stacking height may need to be reduced. Please verify with engineering.")
 
@@ -559,22 +559,22 @@ def build_header_inputs():
             is_v, msg, color = validate_xpl201(cross_docking_aisle, load_weight_kg, primary_pallet.get("pallet_type", ""))
             with val_cols[col_idx]:
                 if color == "green":
-                    st.success(f"**XPL201** ✅\n\n{msg}")
+                    st.success(f"**Horizontal Transport AMR** ✅\n\n{msg}")
                 elif color == "orange":
-                    st.warning(f"**XPL201** ⚠️\n\n{msg}")
+                    st.warning(f"**Horizontal Transport AMR** ⚠️\n\n{msg}")
                 else:
-                    st.error(f"**XPL201** ❌\n\n{msg}")
+                    st.error(f"**Horizontal Transport AMR** ❌\n\n{msg}")
             col_idx += 1
 
         if "Stacking/Conveyor" in application and load_weight_kg and max_stacking_height_m:
             is_v, msg, color = validate_xqe122(load_weight_kg, max_stacking_height_m, aisle_width_mm)
             with val_cols[col_idx]:
                 if color == "green":
-                    st.success(f"**XQE122** ✅\n\n{msg}")
+                    st.success(f"**Stacker AMR** ✅\n\n{msg}")
                 elif color == "orange":
-                    st.warning(f"**XQE122** ⚠️\n\n{msg}")
+                    st.warning(f"**Stacker AMR** ⚠️\n\n{msg}")
                 else:
-                    st.error(f"**XQE122** ❌\n\n{msg}")
+                    st.error(f"**Stacker AMR** ❌\n\n{msg}")
             col_idx += 1
 
         if "Narrow Aisle" in application and xna_model and aisle_width_m and max_stacking_height_m:
