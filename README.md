@@ -1,5 +1,5 @@
 # Smart AGV Site Survey Tool
-
+#Link to the tool: https://presales-tool.streamlit.app
 A multilingual, web-based presales and site survey tool for AGV/AMR automation projects.  
 Built to help sales engineers collect customer requirements on-site, validate product configurations live, and generate a structured Word report packaged as a downloadable ZIP.
 
@@ -71,7 +71,7 @@ Open [http://localhost:8501](http://localhost:8501)
 ## Deployment
 
 Deployed on **Streamlit Community Cloud** (free tier).  
-Every push to `main` triggers an automatic redeploy within ~30 seconds.
+
 
 ---
 
