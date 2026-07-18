@@ -12,6 +12,41 @@ from translations import t, LANGUAGES
 
 TEMPLATE_PATH = "template.docx"
 
+# ── Fleet sizing model ──────────────────────────────────────────────────────
+# Forward (loaded) speed and pick/drop handling time per robot type.
+ROBOT_SPEED_PROFILES = {
+    "Horizontal Transport AMR": {"forward_speed_mps": 1.75, "dead_time_s": 30},
+    "Stacker AMR": {"forward_speed_mps": 1.0, "dead_time_s": 45},
+    "VNA (Standard / High Reach)": {"forward_speed_mps": 1.0, "dead_time_s": 60},
+}
+# Derated return-leg (unloaded/reverse) travel speed — safety-derated per site
+# engineering guidance for reverse travel (informed by ISO 3691-4 practice).
+REVERSE_SPEED_MPS = 0.3
+# Deceleration / pivot / re-acceleration time added per turn, applied on both
+# the outbound and return leg of a mission.
+TURN_PENALTY_S = 5
+# Extra fleet buffer to cover charging downtime, scaled by how many shifts run
+# per day (more shifts = less standby/charging window between them).
+CHARGING_BUFFER_BY_SHIFTS = {1: 1.10, 2: 1.20, 3: 1.30}
+DEFAULT_CHARGING_BUFFER = 1.2
+
+
+def estimate_fleet(pallets_hr, distance_m, num_turns, robot_type, shifts_per_day=None):
+    """Round-trip cycle time (forward + derated reverse + turn penalty + pick/drop),
+    then fleet size scaled by a shift-aware charging/buffer factor."""
+    profile = ROBOT_SPEED_PROFILES.get(robot_type, {"forward_speed_mps": 1.0, "dead_time_s": 30})
+    forward_time = distance_m / profile["forward_speed_mps"]
+    reverse_time = distance_m / REVERSE_SPEED_MPS
+    turn_time = (num_turns or 0) * TURN_PENALTY_S * 2
+    cycle_time = forward_time + reverse_time + turn_time + profile["dead_time_s"]
+
+    buffer_factor = CHARGING_BUFFER_BY_SHIFTS.get(int(shifts_per_day) if shifts_per_day else 0, DEFAULT_CHARGING_BUFFER)
+
+    fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * buffer_factor)) if pallets_hr else 1
+    utilization = min(99, round((pallets_hr * cycle_time / 3600) / fleet_size * 100)) if fleet_size else 0
+    return cycle_time, fleet_size, utilization, buffer_factor
+
+
 # Resource catalogue grouped by section. All resources are coming soon.
 # Each entry: (label, description, icon)
 RESOURCES = {
@@ -253,6 +288,7 @@ def rebuild_route_details_from_session():
             "pallets_per_hour": st.session_state.get(f"route_pallets_per_hour_{i}", 0),
             "avg_distance_m": st.session_state.get(f"route_avg_distance_{i}", 0.0),
             "flow_type": st.session_state.get(f"route_flow_type_{i}", "Simultaneous / continuous"),
+            "num_turns": st.session_state.get(f"route_num_turns_{i}", 0),
         })
 
     if route_details:
@@ -262,36 +298,60 @@ def rebuild_route_details_from_session():
 def _build_operational_metrics(route_details):
     process_lines = []
     notes = []
-    simultaneous_total = 0.0
+    total_pallets_hr = 0.0
+    weighted_distance = 0.0
+    weighted_turns = 0.0
+    active_distances = []
+    active_turns = []
 
     for route in route_details or []:
         from_step = route.get("from", "")
         to_step = route.get("to", "")
         capacity = _to_float(route.get("pallets_per_hour"))
+        distance = _to_float(route.get("avg_distance_m"))
+        turns = _to_float(route.get("num_turns"))
         flow_type = route.get("flow_type", "Simultaneous / continuous")
 
         if not (from_step and to_step):
             continue
 
-        if flow_type == "No - not handled by EP automation":
-            line = f"{from_step} → {to_step}: outside EP automation scope"
+        if flow_type == "No - not handled by this automation":
+            line = f"{from_step} → {to_step}: outside this solution's scope"
         else:
             line = f"{from_step} → {to_step}: {_format_number(capacity)} pallets/hour"
             if flow_type == "On request / intermittent":
                 line += " (on request)"
-            else:
-                simultaneous_total += capacity
+
+            # Every active segment is its own AGV mission and adds to total
+            # required throughput, regardless of simultaneous vs on-request.
+            total_pallets_hr += capacity
+            if distance > 0:
+                active_distances.append(distance)
+                weighted_distance += capacity * distance
+                weighted_turns += capacity * turns
 
         process_lines.append(line)
 
     if any(route.get("flow_type") == "On request / intermittent" for route in (route_details or [])):
         notes.append("Some routes are triggered only on request.")
-    if any(route.get("flow_type") == "No - not handled by EP automation" for route in (route_details or [])):
-        notes.append("Routes outside EP automation scope are excluded from EP throughput and fleet calculations.")
+    if any(route.get("flow_type") == "No - not handled by this automation" for route in (route_details or [])):
+        notes.append("Routes outside this solution's scope are excluded from throughput and fleet calculations.")
+
+    if total_pallets_hr > 0 and weighted_distance > 0:
+        avg_distance_weighted = weighted_distance / total_pallets_hr
+        avg_turns_weighted = weighted_turns / total_pallets_hr
+    elif active_distances:
+        avg_distance_weighted = sum(active_distances) / len(active_distances)
+        avg_turns_weighted = sum(active_turns) / len(active_turns) if active_turns else 0.0
+    else:
+        avg_distance_weighted = 0.0
+        avg_turns_weighted = 0.0
 
     return {
         "pallets_per_hour": "\n".join(process_lines),
-        "pallets_per_hour_total": simultaneous_total,
+        "pallets_per_hour_total": total_pallets_hr,
+        "avg_distance_weighted": round(avg_distance_weighted, 2),
+        "avg_turns_weighted": round(avg_turns_weighted, 1),
         "pallets_per_day": "",
         "operational_efficiency_note": "\n".join(notes),
     }
@@ -705,6 +765,12 @@ distances = [
 ]
 all_data["avg_transport_m"] = round(sum(distances) / len(distances), 2) if distances else ""
 
+_live_metrics = _build_operational_metrics(route_details)
+_auto_pallets_hr = int(_live_metrics["pallets_per_hour_total"])
+_auto_distance = _live_metrics["avg_distance_weighted"]
+_auto_turns = _live_metrics["avg_turns_weighted"]
+_shifts_per_day = all_data.get("shifts_per_day")
+
 # ── Live Fleet Estimator ──────────────────────────────────────────────────────
 st.markdown(
     """
@@ -716,26 +782,45 @@ st.markdown(
     unsafe_allow_html=True,
 )
 with st.expander("Estimate how many robots you need — updates instantly", expanded=False):
-    _fe_cols = st.columns(3)
+    if route_details:
+        st.caption(f"Auto-calculated from {len(route_details)} Material Flow segment(s) — override any value below if needed.")
+
+    # Keys are tied to the computed auto-value so the field re-initializes to
+    # the fresh Material Flow-derived default whenever that data changes, while
+    # still letting the user type a local override in the meantime (Streamlit
+    # otherwise freezes a widget's value at whatever it was on first render).
+    _fe_cols = st.columns(4)
     with _fe_cols[0]:
-        _fe_pallets = st.number_input("Required throughput [pallets/hr]", min_value=0, value=0, step=1, key="_fe_pallets")
+        _fe_pallets = st.number_input(
+            "Required throughput [pallets/hr]", min_value=0, value=_auto_pallets_hr, step=1,
+            key=f"_fe_pallets_{_auto_pallets_hr}",
+        )
     with _fe_cols[1]:
-        _fe_dist = st.number_input("Avg. mission distance [m]", min_value=0.0, value=float(all_data.get("avg_transport_m") or 0), step=1.0, key="_fe_dist")
+        _fe_dist = st.number_input(
+            "Avg. mission distance [m]", min_value=0.0, value=float(_auto_distance or 0), step=1.0,
+            key=f"_fe_dist_{_auto_distance}",
+        )
     with _fe_cols[2]:
-        _fe_type = st.selectbox("Robot type", ["Horizontal Transport AMR", "Stacker AMR", "VNA (Standard / High Reach)"], key="_fe_type")
+        _fe_turns = st.number_input(
+            "Avg. turns per mission (one-way)", min_value=0.0, value=float(_auto_turns or 0), step=1.0,
+            key=f"_fe_turns_{_auto_turns}",
+        )
+    with _fe_cols[3]:
+        _fe_type = st.selectbox("Robot type", list(ROBOT_SPEED_PROFILES.keys()), key="_fe_type")
 
     if _fe_pallets > 0 and _fe_dist > 0:
-        _fe_speed = 1.75 if "Horizontal" in _fe_type else 1.0
-        _fe_dead = 30 if "Horizontal" in _fe_type else (45 if "Stacker" in _fe_type else 60)
-        _fe_cycle = (_fe_dist * 2 / _fe_speed) + _fe_dead
-        _fe_size = max(1, round((_fe_pallets * _fe_cycle / 3600) * 1.2))
-        _fe_util = min(99, round((_fe_pallets * _fe_cycle / 3600) / _fe_size * 100))
+        _fe_cycle, _fe_size, _fe_util, _fe_buffer = estimate_fleet(_fe_pallets, _fe_dist, _fe_turns, _fe_type, _shifts_per_day)
 
         _fe_c1, _fe_c2, _fe_c3 = st.columns(3)
         _fe_c1.metric("Recommended fleet size", f"~{_fe_size} robots")
         _fe_c2.metric("Est. fleet utilisation", f"{_fe_util}%")
         _fe_c3.metric("Cycle time per mission", f"{round(_fe_cycle)}s")
-        st.caption("Formula: fleet = ⌈(pallets/hr × cycle_time / 3600) × 1.2 buffer⌉. Adjust with your real cycle times from site survey.")
+        st.caption(
+            f"Cycle time = (distance ÷ {ROBOT_SPEED_PROFILES[_fe_type]['forward_speed_mps']} m/s loaded) + "
+            f"(distance ÷ {REVERSE_SPEED_MPS} m/s derated return) + (turns × {TURN_PENALTY_S}s × 2 for both legs) + "
+            f"{ROBOT_SPEED_PROFILES[_fe_type]['dead_time_s']}s pick/drop. "
+            f"Fleet = ⌈(pallets/hr × cycle_time / 3600) × {_fe_buffer} shift/charging buffer⌉."
+        )
     elif _fe_pallets > 0 or _fe_dist > 0:
         st.info("Enter both throughput and distance to calculate fleet size.")
     else:
@@ -795,6 +880,15 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
     required_fields = ["customer_name", "customer_email", "customer_mobile", "application"]
     missing = [field for field in required_fields if not all_data.get(field)]
 
+    for route in route_details or []:
+        if route.get("flow_type") == "No - not handled by this automation":
+            continue
+        route_label = f"{route.get('from', '?')} → {route.get('to', '?')}"
+        if not _to_float(route.get("pallets_per_hour")) > 0:
+            missing.append(f"Pallets/hour ({route_label})")
+        if not _to_float(route.get("avg_distance_m")) > 0:
+            missing.append(f"Average Distance ({route_label})")
+
     if missing:
         st.error(f"Missing required fields: {', '.join(missing)}")
     else:
@@ -811,6 +905,8 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             context["pallets_per_hour"] = operational_metrics["pallets_per_hour"]
             context["pallets_per_day"] = operational_metrics["pallets_per_day"]
             context["pallets_per_hour_total"] = operational_metrics["pallets_per_hour_total"]
+            context["avg_distance_weighted"] = operational_metrics["avg_distance_weighted"]
+            context["avg_turns_weighted"] = operational_metrics["avg_turns_weighted"]
             context["operational_efficiency_note"] = operational_metrics["operational_efficiency_note"]
 
             pallets = all_data.get("pallets", [])
@@ -1108,7 +1204,9 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
             validation_summary = []
 
             pallets_hr = _to_float(context.get("pallets_per_hour_total"))
-            avg_dist = _to_float(all_data.get("avg_transport_m"))
+            avg_dist = _to_float(context.get("avg_distance_weighted")) or _to_float(all_data.get("avg_transport_m"))
+            avg_turns = _to_float(context.get("avg_turns_weighted"))
+            shifts_per_day = all_data.get("shifts_per_day")
 
             if "Transport / Cross Docking" in selected_apps and all_data.get("cross_docking_aisle"):
                 aisle = all_data.get("cross_docking_aisle", 0)
@@ -1116,9 +1214,9 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 is_valid, msg, color = validate_xpl201(aisle, weight, all_data.get("pallet_type", ""))
                 validation_summary.append(f"Horizontal Transport AMR ({all_data.get('xpl_sub_type', 'N/A')}): {msg} ({color})")
                 if is_valid or color == "orange":
-                    speed = 1.75
-                    cycle_time = (avg_dist * 2 / speed) + 30 if avg_dist else 30
-                    fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
+                    cycle_time, fleet_size, _util, _buf = estimate_fleet(
+                        pallets_hr, avg_dist, avg_turns, "Horizontal Transport AMR", shifts_per_day
+                    )
                     recommendations.append(f"Horizontal Transport AMR - {all_data.get('xpl_sub_type', 'Transport')} - Fast floor-level transport up to 2000 kg")
                     fleet_estimates.append(f"Horizontal Transport AMR: ~{fleet_size} vehicles")
 
@@ -1130,9 +1228,9 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 )
                 validation_summary.append(f"Stacker AMR: {msg} ({color})")
                 if is_valid or color == "orange":
-                    speed = 1.0
-                    cycle_time = (avg_dist * 2 / speed) + 45 if avg_dist else 45
-                    fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
+                    cycle_time, fleet_size, _util, _buf = estimate_fleet(
+                        pallets_hr, avg_dist, avg_turns, "Stacker AMR", shifts_per_day
+                    )
                     recommendations.append("Stacker AMR - Stacking / conveyor handling")
                     fleet_estimates.append(f"Stacker AMR: ~{fleet_size} vehicles")
 
@@ -1146,9 +1244,9 @@ if st.button(t("generate_btn"), type="primary", disabled=(not agree or temperatu
                 )
                 validation_summary.append(f"{model}: {msg} ({color})")
                 if is_valid or color == "orange":
-                    speed = 1.0
-                    cycle_time = (avg_dist * 2 / speed) + 60 if avg_dist else 60
-                    fleet_size = max(1, round((pallets_hr * cycle_time / 3600) * 1.2)) if pallets_hr else 1
+                    cycle_time, fleet_size, _util, _buf = estimate_fleet(
+                        pallets_hr, avg_dist, avg_turns, "VNA (Standard / High Reach)", shifts_per_day
+                    )
                     recommendations.append(f"{model} - Narrow aisle stacking")
                     fleet_estimates.append(f"{model}: ~{fleet_size} vehicles")
 

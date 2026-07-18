@@ -94,7 +94,7 @@ You can create as many steps as needed. The next-step options are guided by the 
     st.markdown("### Flow Details Between Steps")
     st.caption(
         "Enter only the route capacity and average travel distance here. "
-        "Use 'No - not handled by EP automation' for any step that is outside EP automation scope."
+        "Use 'No - not handled by this automation' for any step that is outside this solution's scope."
     )
 
     route_details = []
@@ -109,24 +109,26 @@ You can create as many steps as needed. The next-step options are guided by the 
 
         st.markdown(f"#### {source_step} → {target_step}")
 
-        col1, col2, col3 = st.columns([1, 1, 1.2])
+        col1, col2, col3, col4 = st.columns([1, 1, 1.2, 1])
 
         with col1:
             pallets_per_hour = st.number_input(
-                f"Pallets/hour: {source_step} → {target_step}",
+                f"Pallets/hour *: {source_step} → {target_step}",
                 min_value=0,
                 value=0,
                 step=1,
                 key=f"route_pallets_per_hour_{i}",
+                help="Required to auto-calculate the fleet size estimate, unless this route is 'Not handled'.",
             )
 
         with col2:
             avg_distance = st.number_input(
-                f"Average Distance [m]: {source_step} → {target_step}",
+                f"Average Distance [m] *: {source_step} → {target_step}",
                 min_value=0.0,
                 value=0.0,
                 step=1.0,
                 key=f"route_avg_distance_{i}",
+                help="Required to auto-calculate the fleet size estimate, unless this route is 'Not handled'.",
             )
 
         with col3:
@@ -134,13 +136,23 @@ You can create as many steps as needed. The next-step options are guided by the 
             flow_type_options = [
                 "Simultaneous / continuous",
                 "On request / intermittent",
-                "No - not handled by EP automation",
+                "No - not handled by this automation",
             ]
             flow_type = st.selectbox(
                 f"Flow Type: {source_step} → {target_step}",
                 flow_type_options,
                 index=flow_type_options.index(default_flow_type),
                 key=f"route_flow_type_{i}",
+            )
+
+        with col4:
+            num_turns = st.number_input(
+                f"Turns (one-way): {source_step} → {target_step}",
+                min_value=0,
+                value=0,
+                step=1,
+                key=f"route_num_turns_{i}",
+                help="Number of turns on this path. Counted for both the outbound and return leg.",
             )
 
         source_image = st.file_uploader(
@@ -156,6 +168,7 @@ You can create as many steps as needed. The next-step options are guided by the 
             "pallets_per_hour": pallets_per_hour,
             "avg_distance_m": avg_distance,
             "flow_type": flow_type,
+            "num_turns": num_turns,
             "source_image": source_image,
         }
         route_details.append(route)
@@ -167,8 +180,8 @@ You can create as many steps as needed. The next-step options are guided by the 
         route_summary_lines.append(f"{source_step} → {target_step}")
 
         detail_parts = []
-        if flow_type == "No - not handled by EP automation":
-            detail_parts.append("outside EP automation scope")
+        if flow_type == "No - not handled by this automation":
+            detail_parts.append("outside this solution's scope")
         else:
             if avg_distance > 0:
                 detail_parts.append(f"{_format_number(avg_distance)} m")
