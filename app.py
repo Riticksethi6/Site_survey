@@ -12,81 +12,51 @@ from translations import t, LANGUAGES
 
 TEMPLATE_PATH = "template.docx"
 
-XPL_PDF_CANDIDATES = [
-    "1.9_XPL_Layout_planning_Specification.pdf",
-    "1.9_XPL_Layout_Planning_Specification.pdf",
-]
-
-# Resource catalogue grouped by section.
-# Each entry: (label, filename, mime, description, icon [, candidate_key])
+# Resource catalogue grouped by section. All resources are coming soon.
+# Each entry: (label, description, icon)
 RESOURCES = {
     "Layout References": [
         (
-            "Stacker AMR Layout Requirements",
-            "1.1_Layout_Requirment_XQE_.pdf",
-            "application/pdf",
-            "Aisle planning, clearances, floor stacking and rack stacking specifications for the Stacker AMR.",
+            "Stacking Robot Layout Guidelines",
+            "Aisle planning, clearances, floor stacking and rack stacking guidelines for stacking-type AMRs.",
             "📐",
         ),
         (
-            "VNA AMR Layout Requirements (Draft)",
-            "1.3_Layout_Requirment_XNA.docx",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "Draft layout and aisle planning specification for VNA Standard / VNA High Reach narrow-aisle robots.",
+            "Narrow-Aisle Robot Layout Guidelines (Draft)",
+            "Draft layout and aisle planning guidance for narrow-aisle / high-reach robots.",
             "📐",
-            None,
-            True,  # coming_soon
         ),
         (
-            "Horizontal Transport AMR Layout Specification (Draft)",
-            None,  # resolved at runtime from candidates
-            "application/pdf",
-            "Aisle planning and layout specification for horizontal transport / cross-docking robots.",
+            "Transport Robot Layout Guidelines (Draft)",
+            "Aisle planning and layout guidance for horizontal transport / cross-docking robots.",
             "📐",
-            "XPL_PDF_CANDIDATES",
-            True,  # coming_soon
         ),
     ],
-    "White Books": [
+    "Technical Datasheets": [
         (
-            "Stacker AMR Technical Reference",
-            "XQE122 CE White book Extern.pdf",
-            "application/pdf",
-            "Technical reference for the Stacker AMR: features, specs, operation, and safety.",
+            "Stacking Robot Technical Datasheet",
+            "Technical datasheet for stacking-type robots: features, specs, operation, and safety.",
             "📖",
         ),
         (
-            "Horizontal Transport AMR Technical Reference",
-            "XPL201 CE White book Extern.pdf",
-            "application/pdf",
-            "Technical reference for the Horizontal Transport AMR: features, specs, operation, and safety.",
+            "Transport Robot Technical Datasheet",
+            "Technical datasheet for horizontal transport robots: features, specs, operation, and safety.",
             "📖",
         ),
     ],
     "System Requirements": [
         (
-            "AGV System Requirements",
-            "5_System Requirments.pdf",
-            "application/pdf",
-            "Network, WiFi, IT infrastructure and connectivity requirements for AGV fleet deployment.",
+            "Fleet IT & Network Requirements",
+            "Network, WiFi, IT infrastructure and connectivity requirements for autonomous fleet deployment.",
             "🛜",
         ),
         (
-            "AGV Pallet Compatibility Reference",
-            "2_AGV - Pallet Compatibility Reference.pdf",
-            "application/pdf",
-            "Pallet and load compatibility requirements for Stacker / Horizontal Transport / VNA robot types — covers transport, stacking, custom sizes, and load condition checks.",
+            "Pallet & Load Compatibility Guide",
+            "Pallet and load compatibility guidance for stacking / transport / narrow-aisle robot types — covers transport, stacking, custom sizes, and load condition checks.",
             "🪵",
         ),
     ],
 }
-
-
-def find_existing_file(candidates):
-    for path in candidates:
-        if os.path.exists(path):
-            return path
-    return None
 
 
 @st.dialog("ZIP download started")
@@ -350,6 +320,29 @@ st.markdown(
     [data-testid="stSidebar"] hr { border-color: #334155 !important; }
     [data-testid="stSidebarNav"] { display: none; }
 
+    /* ── Sidebar: grouped card sections ─────────────────── */
+    [data-testid="stSidebar"] [data-testid="stLayoutWrapper"] {
+        background: rgba(148, 163, 184, 0.06);
+        border: 1px solid #293548 !important;
+        border-radius: 12px;
+        padding: 2px 6px;
+        margin-bottom: 14px;
+    }
+    [data-testid="stSidebar"] .sidebar-section-label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #93a4c3 !important;
+        margin: 2px 0 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+        background: rgba(148, 163, 184, 0.06) !important;
+        border-color: #334155 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] { color: #7f93b8 !important; }
+
     /* ── App title area ──────────────────────────────────── */
     h1 { letter-spacing: -0.5px; }
 
@@ -460,114 +453,108 @@ with st.sidebar:
     # ── Sidebar brand header ───────────────────────────────
     st.markdown(
         """
-        <div style="text-align:center;padding:20px 0 16px;">
-          <div style="font-size:32px;margin-bottom:4px;">🏭</div>
+        <div style="text-align:center;padding:18px 0 14px;">
+          <div style="font-size:30px;margin-bottom:4px;">🏭</div>
           <div style="font-size:15px;font-weight:800;color:#a5b4fc;letter-spacing:-0.3px;">
             AGV / AMR / Robot
           </div>
-          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;">
+          <div style="font-size:11px;color:#7f93b8;margin-top:2px;">
             Site Survey Tool
           </div>
         </div>
-        <hr style="border-color:#1e293b;margin:0 0 16px;">
         """,
         unsafe_allow_html=True,
     )
 
     # ── Settings section ────────────────────────────────────
-    st.markdown(
-        "<div style='font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;"
-        "letter-spacing:1.5px;margin-bottom:8px;'>⚙️ Settings</div>",
-        unsafe_allow_html=True,
-    )
-    lang_name = st.selectbox(
-        t("language_label"),
-        list(LANGUAGES.keys()),
-        index=list(LANGUAGES.values()).index(st.session_state.get("lang", "en")),
-        key="_lang_selector",
-    )
-    st.session_state["lang"] = LANGUAGES[lang_name]
+    with st.container(border=True):
+        st.markdown("<div class='sidebar-section-label'>⚙️ Settings</div>", unsafe_allow_html=True)
+        lang_name = st.selectbox(
+            t("language_label"),
+            list(LANGUAGES.keys()),
+            index=list(LANGUAGES.values()).index(st.session_state.get("lang", "en")),
+            key="_lang_selector",
+        )
+        st.session_state["lang"] = LANGUAGES[lang_name]
 
-    mode_choice = st.radio(
-        t("mode_label"),
-        [t("mode_expert"), t("mode_guided")],
-        horizontal=True,
-        key="_mode_radio",
-    )
-    st.session_state["app_mode"] = "guided" if mode_choice == t("mode_guided") else "expert"
-
-    st.markdown("<hr style='border-color:#1e293b;margin:16px 0;'>", unsafe_allow_html=True)
+        mode_choice = st.radio(
+            t("mode_label"),
+            [t("mode_expert"), t("mode_guided")],
+            horizontal=True,
+            key="_mode_radio",
+        )
+        st.session_state["app_mode"] = "guided" if mode_choice == t("mode_guided") else "expert"
 
     # ── Session management ──────────────────────────────────
-    st.markdown(
-        "<div style='font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;"
-        "letter-spacing:1.5px;margin-bottom:8px;'>💾 Session</div>",
-        unsafe_allow_html=True,
-    )
+    with st.container(border=True):
+        st.markdown("<div class='sidebar-section-label'>💾 Session</div>", unsafe_allow_html=True)
 
-    _save_data = {}
-    for _k, _v in st.session_state.items():
-        if _k in _INTERNAL_KEYS or _k.startswith("_") or _is_forbidden_session_key(_k):
-            continue
-        _safe = _to_json_safe(_v)
-        if _safe is not None or _v is None:
-            _save_data[_k] = _safe
+        _save_data = {}
+        for _k, _v in st.session_state.items():
+            if _k in _INTERNAL_KEYS or _k.startswith("_") or _is_forbidden_session_key(_k):
+                continue
+            _safe = _to_json_safe(_v)
+            if _safe is not None or _v is None:
+                _save_data[_k] = _safe
 
-    _session_name_raw = st.text_input(
-        "Session file name",
-        value=st.session_state.get("_session_file_name", "agv_session"),
-        placeholder="e.g. CustomerABC",
-        key="_session_name_input",
-    )
-    st.session_state["_session_file_name"] = _session_name_raw
-    _session_filename = re.sub(r"[^\w\-]", "_", _session_name_raw.strip()) or "agv_session"
+        _session_name_raw = st.text_input(
+            "Session file name",
+            value=st.session_state.get("_session_file_name", "agv_session"),
+            placeholder="e.g. CustomerABC",
+            key="_session_name_input",
+        )
+        st.session_state["_session_file_name"] = _session_name_raw
+        _session_filename = re.sub(r"[^\w\-]", "_", _session_name_raw.strip()) or "agv_session"
 
-    st.download_button(
-        t("save_session_btn"),
-        data=json.dumps(_save_data, ensure_ascii=False, indent=2, default=_json_fallback),
-        file_name=f"{_session_filename}.json",
-        mime="application/json",
-        use_container_width=True,
-    )
+        st.download_button(
+            t("save_session_btn"),
+            data=json.dumps(_save_data, ensure_ascii=False, indent=2, default=_json_fallback),
+            file_name=f"{_session_filename}.json",
+            mime="application/json",
+            use_container_width=True,
+            type="primary",
+        )
 
-    _uploaded_session = st.file_uploader(
-        t("load_session_label"),
-        type="json",
-        key="_session_uploader",
-    )
-    if _uploaded_session is not None:
-        if st.button("Load Session Now", use_container_width=True, key="load_session_btn"):
-            try:
-                _loaded = json.loads(_uploaded_session.getvalue().decode("utf-8"))
-                _loaded = normalize_loaded_session(_loaded)
+        _uploaded_session = st.file_uploader(
+            t("load_session_label"),
+            type="json",
+            key="_session_uploader",
+        )
+        if _uploaded_session is not None:
+            if st.button("Load Session Now", use_container_width=True, key="load_session_btn"):
+                try:
+                    _loaded = json.loads(_uploaded_session.getvalue().decode("utf-8"))
+                    _loaded = normalize_loaded_session(_loaded)
 
-                for _k, _v in _loaded.items():
-                    st.session_state[_k] = _v
+                    for _k, _v in _loaded.items():
+                        st.session_state[_k] = _v
 
-                rebuild_route_details_from_session()
-                st.success(t("session_loaded"))
+                    rebuild_route_details_from_session()
+                    st.success(t("session_loaded"))
+                    st.rerun()
+
+                except Exception as e:
+                    st.error(f"Failed to load session file: {e}")
+
+    # ── Clear form (with confirm-before-wipe safeguard) ──────
+    with st.container(border=True):
+        if st.session_state.get("_confirm_clear"):
+            st.warning("This clears all entered data. Are you sure?")
+            if st.button("Yes, clear everything", use_container_width=True, key="confirm_clear_yes", type="primary"):
+                _keep = {"lang", "app_mode", "guided_step"}
+                for _k in [k for k in st.session_state if k not in _keep and not k.startswith("_")]:
+                    del st.session_state[_k]
+                st.session_state["_confirm_clear"] = False
+                st.rerun()
+            if st.button("Cancel", use_container_width=True, key="confirm_clear_no"):
+                st.session_state["_confirm_clear"] = False
+                st.rerun()
+        else:
+            if st.button("🗑️ Clear All & Start Fresh", use_container_width=True, key="clear_all_btn"):
+                st.session_state["_confirm_clear"] = True
                 st.rerun()
 
-            except Exception as e:
-                st.error(f"Failed to load session file: {e}")
-
-    st.markdown("<hr style='border-color:#1e293b;margin:16px 0;'>", unsafe_allow_html=True)
-
-    # ── Clear form ──────────────────────────────────────────
-    if st.button("🗑️ Clear All & Start Fresh", use_container_width=True):
-        _keep = {"lang", "app_mode", "guided_step"}
-        for _k in [k for k in st.session_state if k not in _keep and not k.startswith("_")]:
-            del st.session_state[_k]
-        st.rerun()
-
-    st.markdown("<hr style='border-color:#1e293b;margin:16px 0;'>", unsafe_allow_html=True)
-
     # ── Live summary cards ──────────────────────────────────
-    st.markdown(
-        "<div style='font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;"
-        "letter-spacing:1.5px;margin-bottom:10px;'>📋 Survey Summary</div>",
-        unsafe_allow_html=True,
-    )
     _e = t("sum_empty")
     _customer = st.session_state.get("customer_name") or _e
     _apps = ", ".join(st.session_state.get("application") or []) or _e
@@ -580,29 +567,40 @@ with st.sidebar:
     _flow_str = f"{_flow} steps" if _flow else _e
     _integ = st.session_state.get("integration_required") or _e
 
-    def _sum_row(icon, label, value):
-        filled = value != _e
-        val_color = "#e2e8f0" if filled else "#475569"
-        return (
-            f"<div style='display:flex;align-items:center;gap:8px;padding:6px 0;"
-            f"border-bottom:1px solid #1e293b;'>"
-            f"<span style='font-size:14px;'>{icon}</span>"
-            f"<div>"
-            f"<div style='font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1px;'>{label}</div>"
-            f"<div style='font-size:12px;color:{val_color};font-weight:600;'>{value}</div>"
-            f"</div></div>"
-        )
+    _summary_fields = [
+        ("👤", t("sum_customer"), _customer),
+        ("📦", t("sum_application"), _apps),
+        ("🪵", t("sum_pallet"), _ptype),
+        ("⚖️", t("sum_weight"), _wkg_str),
+        ("↔️", t("sum_aisle"), _aisle_str),
+        ("🔄", t("sum_flow"), _flow_str),
+        ("🔗", t("sum_integration"), _integ),
+    ]
+    _filled_count = sum(1 for _, _, v in _summary_fields if v != _e)
+    _total_count = len(_summary_fields)
 
-    st.markdown(
-        _sum_row("👤", t("sum_customer"), _customer)
-        + _sum_row("📦", t("sum_application"), _apps)
-        + _sum_row("🪵", t("sum_pallet"), _ptype)
-        + _sum_row("⚖️", t("sum_weight"), _wkg_str)
-        + _sum_row("↔️", t("sum_aisle"), _aisle_str)
-        + _sum_row("🔄", t("sum_flow"), _flow_str)
-        + _sum_row("🔗", t("sum_integration"), _integ),
-        unsafe_allow_html=True,
-    )
+    with st.container(border=True):
+        st.markdown("<div class='sidebar-section-label'>📋 Survey Summary</div>", unsafe_allow_html=True)
+        st.progress(_filled_count / _total_count)
+        st.caption(f"{_filled_count} of {_total_count} fields completed")
+
+        def _sum_row(icon, label, value):
+            filled = value != _e
+            val_color = "#e2e8f0" if filled else "#5b6b85"
+            return (
+                f"<div style='display:flex;align-items:center;gap:8px;padding:6px 0;"
+                f"border-bottom:1px solid #1e293b;'>"
+                f"<span style='font-size:14px;'>{icon}</span>"
+                f"<div>"
+                f"<div style='font-size:9px;color:#7f93b8;text-transform:uppercase;letter-spacing:1px;'>{label}</div>"
+                f"<div style='font-size:12px;color:{val_color};font-weight:600;'>{value}</div>"
+                f"</div></div>"
+            )
+
+        st.markdown(
+            "".join(_sum_row(icon, label, value) for icon, label, value in _summary_fields),
+            unsafe_allow_html=True,
+        )
 
 st.markdown(
     f"""
@@ -758,22 +756,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-_dl_idx = 0
 for _section, _items in RESOURCES.items():
     st.markdown(f"**{_section}**")
     _res_cols = st.columns(3)
-    for _col_pos, _res in enumerate(_items):
-        _label = _res[0]
-        _fname = _res[1]
-        _mime = _res[2]
-        _desc = _res[3]
-        _icon = _res[4]
-        _candidate_key = _res[5] if len(_res) > 5 else None
-        _coming_soon = _res[6] if len(_res) > 6 else False
-
-        if _candidate_key == "XPL_PDF_CANDIDATES":
-            _fname = find_existing_file(XPL_PDF_CANDIDATES)
-
+    for _col_pos, (_label, _desc, _icon) in enumerate(_items):
         with _res_cols[_col_pos % 3]:
             st.markdown(
                 f"""
@@ -786,21 +772,7 @@ for _section, _items in RESOURCES.items():
                 """,
                 unsafe_allow_html=True,
             )
-            if _coming_soon:
-                st.caption("🔜 Coming soon")
-            elif _fname and os.path.exists(_fname):
-                with open(_fname, "rb") as _f:
-                    st.download_button(
-                        label="Download",
-                        data=_f.read(),
-                        file_name=os.path.basename(_fname),
-                        mime=_mime,
-                        use_container_width=True,
-                        key=f"res_dl_{_dl_idx}",
-                    )
-            else:
-                st.caption("📋 Coming soon")
-            _dl_idx += 1
+            st.caption("🔜 Coming soon")
 
 st.markdown(
     """
